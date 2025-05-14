@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keseranpaseran/1.dart';
+import 'package:keseranpaseran/2.dart';
 import 'package:keseranpaseran/3.dart';
 import 'package:keseranpaseran/4.dart';
 import 'package:keseranpaseran/5.dart';
@@ -22,7 +24,7 @@ class AppRouter extends StatelessWidget {
   AppRouter({super.key});
 
   final router = GoRouter(
-    initialLocation: '/home',
+    initialLocation: '/login',
     navigatorKey: rootNavigatorKey,
     routes: [
       StatefulShellRoute.indexedStack(
@@ -58,33 +60,33 @@ class AppRouter extends StatelessWidget {
               /// 6  (ルート画面)
               GoRoute(
                 path: '/account',
-                name: 'account',                      // ← name を付けておくと便利
+                name: 'account', // ← name を付けておくと便利
                 builder: (context, state) => const Account(),
                 routes: [
                   /// 6.1
                   GoRoute(
-                    path: 'edit',                     // => /account/edit
+                    path: 'edit', // => /account/edit
                     name: 'editProfile',
                     builder: (context, state) => const EditProfilePage(),
                   ),
 
                   /// 6.2
                   GoRoute(
-                    path: 'change-email',             // => /account/change-email
+                    path: 'change-email', // => /account/change-email
                     name: 'changeEmail',
                     builder: (context, state) => const ChangeEmailPage(),
                   ),
 
                   /// 6.3 (完了ダイアログ画面)
                   GoRoute(
-                    path: 'email-sent',               // => /account/email-sent
+                    path: 'email-sent', // => /account/email-sent
                     name: 'emailSent',
                     builder: (context, state) => const EmailSentPage(),
                   ),
 
                   /// 6.4
                   GoRoute(
-                    path: 'search',                   // => /account/search
+                    path: 'search', // => /account/search
                     name: 'accountSearch',
                     builder: (context, state) => const AccountSearchPage(),
                   ),
@@ -93,6 +95,14 @@ class AppRouter extends StatelessWidget {
             ],
           ),
         ],
+      ),
+      GoRoute(path: '/login',
+        name: 'login',
+       builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/account_create',
+        name: 'accountCreate',
+        builder: (context, state) => const AccountCreate(),
       ),
     ],
   );
@@ -107,6 +117,9 @@ class AppRouter extends StatelessWidget {
         ),
         useMaterial3: false,
         primaryIconTheme: const IconThemeData(color: Colors.black),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color.fromARGB(255, 222, 222, 222),
+        ),
       ),
     );
   }
