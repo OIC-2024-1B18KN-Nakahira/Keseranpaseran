@@ -4,7 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:keseranpaseran/3.dart';
 import 'package:keseranpaseran/4.dart';
 import 'package:keseranpaseran/5.dart';
-import 'package:keseranpaseran/6.dart';
+import 'package:keseranpaseran/6/6.dart';
+import 'package:keseranpaseran/6/6_edit_profile.dart';
+import 'package:keseranpaseran/6/6_change_email.dart';
+import 'package:keseranpaseran/6/6_email_sent.dart';
+import 'package:keseranpaseran/6/6_search.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> calendarNavigatorKey =
@@ -51,9 +55,40 @@ class AppRouter extends StatelessWidget {
           StatefulShellBranch(
             navigatorKey: accountNavigatorKey,
             routes: [
+              /// 6  (ルート画面)
               GoRoute(
                 path: '/account',
+                name: 'account',                      // ← name を付けておくと便利
                 builder: (context, state) => const Account(),
+                routes: [
+                  /// 6.1
+                  GoRoute(
+                    path: 'edit',                     // => /account/edit
+                    name: 'editProfile',
+                    builder: (context, state) => const EditProfilePage(),
+                  ),
+
+                  /// 6.2
+                  GoRoute(
+                    path: 'change-email',             // => /account/change-email
+                    name: 'changeEmail',
+                    builder: (context, state) => const ChangeEmailPage(),
+                  ),
+
+                  /// 6.3 (完了ダイアログ画面)
+                  GoRoute(
+                    path: 'email-sent',               // => /account/email-sent
+                    name: 'emailSent',
+                    builder: (context, state) => const EmailSentPage(),
+                  ),
+
+                  /// 6.4
+                  GoRoute(
+                    path: 'search',                   // => /account/search
+                    name: 'accountSearch',
+                    builder: (context, state) => const AccountSearchPage(),
+                  ),
+                ],
               ),
             ],
           ),
