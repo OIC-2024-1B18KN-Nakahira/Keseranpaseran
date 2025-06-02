@@ -12,6 +12,7 @@ import 'package:keseranpaseran/6/6_edit_profile.dart';
 import 'package:keseranpaseran/6/6_change_email.dart';
 import 'package:keseranpaseran/6/6_email_sent.dart';
 import 'package:keseranpaseran/6/6_search.dart';
+import 'record.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> calendarNavigatorKey =
@@ -38,7 +39,7 @@ class AppRouter extends StatelessWidget {
             navigatorKey: calendarNavigatorKey,
             routes: [
               GoRoute(
-                path: '/calendar',
+                path: '/home',
                 builder: (context, state) => const Calender(),
               ),
             ],
@@ -46,7 +47,10 @@ class AppRouter extends StatelessWidget {
           StatefulShellBranch(
             navigatorKey: todoNavigatorKey,
             routes: [
-              GoRoute(path: '/todo', builder: (context, state) => const Todo()),
+              GoRoute(
+                path: '/recod',
+                builder: (context, state) => const Record(),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -148,25 +152,15 @@ class AppNavigationBar extends StatelessWidget {
         },
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.calendar_today_outlined),
-            label: 'カレンダー',
-            selectedIcon: const Icon(Icons.calendar_today),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.checklist_outlined),
-            label: 'Todo',
-            selectedIcon: const Icon(Icons.checklist),
-          ),
-          NavigationDestination(
             icon: const Icon(Icons.home_outlined),
             label: 'ホーム',
-            selectedIcon: const Icon(Icons.home),
           ),
           NavigationDestination(
-            icon: const Icon(Icons.account_circle_outlined),
-            label: 'アカウント',
-            selectedIcon: const Icon(Icons.account_circle),
+            icon: const Icon(Icons.edit_document),
+            label: '記録',
           ),
+          NavigationDestination(icon: const Icon(Icons.menu_book), label: '履歴'),
+          NavigationDestination(icon: const Icon(Icons.settings), label: '設定'),
         ],
       ),
     );
