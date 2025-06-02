@@ -1,8 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keseranpaseran/1.dart';
-import 'package:keseranpaseran/2.dart';
+import 'package:keseranpaseran/1/1.dart';
+import 'package:keseranpaseran/1/1_account_create.dart';
+import 'package:keseranpaseran/1/2_account_create2.dart';
 import 'package:keseranpaseran/3.dart';
 import 'package:keseranpaseran/4.dart';
 import 'package:keseranpaseran/5.dart';
@@ -96,13 +97,20 @@ class AppRouter extends StatelessWidget {
           ),
         ],
       ),
-      GoRoute(path: '/login',
+      GoRoute(
+        path: '/login',
         name: 'login',
-       builder: (context, state) => const LoginPage()),
+        builder: (context, state) => const LoginPage(),
+      ),
       GoRoute(
         path: '/account_create',
         name: 'accountCreate',
         builder: (context, state) => const AccountCreate(),
+      ),
+      GoRoute(
+        path: '/account_create2',
+        name: 'accountCreate2',
+        builder: (context, state) => const AccountCreate2(),
       ),
     ],
   );
@@ -115,7 +123,6 @@ class AppRouter extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 239, 239, 239),
         ),
-        useMaterial3: false,
         primaryIconTheme: const IconThemeData(color: Colors.black),
         appBarTheme: const AppBarTheme(
           backgroundColor: Color.fromARGB(255, 222, 222, 222),

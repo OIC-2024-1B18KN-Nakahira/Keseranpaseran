@@ -110,17 +110,13 @@ class LoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-      onPressed: () => context.push('/account_create'),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+      onPressed: () => context.push('/home'),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
         child: Text(
           'ログイン',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: 30),
         ),
       ),
     );
@@ -154,7 +150,7 @@ class RegisterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () {},
+      onPressed: ()=> context.push('/account_create2'),
       child: Text(
         'アカウント作成はこちら',
         style: TextStyle(
