@@ -35,6 +35,7 @@ class AccountCreate extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 30),
               child: TextBox(),
             ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: AccountCreatButton(),
@@ -52,8 +53,8 @@ class AccountCreatButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-      onPressed: () => context.push('/account'),
+      style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+      onPressed: () => context.push('/home'),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: Text(
