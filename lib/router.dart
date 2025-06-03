@@ -129,7 +129,8 @@ class AppRouter extends StatelessWidget {
         ),
         primaryIconTheme: const IconThemeData(color: Colors.black),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color.fromARGB(255, 222, 222, 222),
+          backgroundColor: Colors.white,
+          toolbarHeight: 80,
         ),
       ),
     );
