@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '1.dart';
+import 'account.dart';
 
 class AccountCreate extends StatelessWidget {
   const AccountCreate({super.key});
