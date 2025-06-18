@@ -101,7 +101,7 @@ class Record extends StatelessWidget {
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
+                          horizontal: 10,
                           vertical: 10,
                         ),
                         child: TimeButton(),
@@ -110,11 +110,9 @@ class Record extends StatelessWidget {
                   ],
                 ),
               ),
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: RecoedButton(),
-                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: Center(child: RecoedButton()),
               ),
             ],
           ),
@@ -366,7 +364,7 @@ class TimeButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
             children: [
               Stack(
@@ -434,7 +432,7 @@ class TimeButton extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
             children: [
               Stack(

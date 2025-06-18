@@ -5,7 +5,6 @@ import 'package:keseranpaseran/1/1.dart';
 import 'package:keseranpaseran/1/1_account_create.dart';
 import 'package:keseranpaseran/1/2_account_create2.dart';
 import 'package:keseranpaseran/3.dart';
-import 'package:keseranpaseran/4.dart';
 import 'package:keseranpaseran/5.dart';
 import 'package:keseranpaseran/6/6.dart';
 import 'package:keseranpaseran/6/6_edit_profile.dart';
