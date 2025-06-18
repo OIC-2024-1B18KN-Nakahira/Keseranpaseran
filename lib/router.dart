@@ -1,16 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keseranpaseran/1/1.dart';
-import 'package:keseranpaseran/1/1_account_create.dart';
-import 'package:keseranpaseran/1/2_account_create2.dart';
-import 'package:keseranpaseran/3.dart';
-import 'package:keseranpaseran/5.dart';
-import 'package:keseranpaseran/6/6.dart';
-import 'package:keseranpaseran/6/6_edit_profile.dart';
-import 'package:keseranpaseran/6/6_change_email.dart';
-import 'package:keseranpaseran/6/6_email_sent.dart';
-import 'package:keseranpaseran/6/6_search.dart';
+import 'package:keseranpaseran/acount_page/account.dart';
+import 'package:keseranpaseran/acount_page/account_setting.dart';
+import 'package:keseranpaseran/acount_page/login.dart';
+import 'package:keseranpaseran/setting_page/6.dart';
+import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
+import 'package:keseranpaseran/setting_page/6_change_email.dart';
+import 'package:keseranpaseran/setting_page/6_email_sent.dart';
+import 'package:keseranpaseran/setting_page/6_search.dart';
+import 'package:keseranpaseran/history.dart';
+import 'package:keseranpaseran/home.dart';
 import 'record.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -39,7 +39,7 @@ class AppRouter extends StatelessWidget {
             routes: [
               GoRoute(
                 path: '/home',
-                builder: (context, state) => const Calender(),
+                builder: (context, state) => const Home(),
               ),
             ],
           ),
@@ -47,7 +47,7 @@ class AppRouter extends StatelessWidget {
             navigatorKey: todoNavigatorKey,
             routes: [
               GoRoute(
-                path: '/recod',
+                path: '/record',
                 builder: (context, state) => const Record(),
               ),
             ],
@@ -55,7 +55,8 @@ class AppRouter extends StatelessWidget {
           StatefulShellBranch(
             navigatorKey: homeNavigatorKey,
             routes: [
-              GoRoute(path: '/home', builder: (context, state) => const Home()),
+              GoRoute(path: '/history', 
+              builder: (context, state) => const History()),
             ],
           ),
           StatefulShellBranch(
