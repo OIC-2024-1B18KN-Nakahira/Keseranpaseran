@@ -61,11 +61,14 @@ class AppTitle extends StatelessWidget {
                       horizontal: 20,
                       vertical: 5,
                     ),
-                    child: Text(
-                      "○○mg/日",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Text(
+                        "○○mg/日",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
