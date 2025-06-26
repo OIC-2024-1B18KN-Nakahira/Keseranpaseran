@@ -37,10 +37,7 @@ class AppRouter extends StatelessWidget {
           StatefulShellBranch(
             navigatorKey: calendarNavigatorKey,
             routes: [
-              GoRoute(
-                path: '/home',
-                builder: (context, state) => const Home(),
-              ),
+              GoRoute(path: '/home', builder: (context, state) => const Home()),
             ],
           ),
           StatefulShellBranch(
@@ -55,8 +52,10 @@ class AppRouter extends StatelessWidget {
           StatefulShellBranch(
             navigatorKey: homeNavigatorKey,
             routes: [
-              GoRoute(path: '/history', 
-              builder: (context, state) => const History()),
+              GoRoute(
+                path: '/history',
+                builder: (context, state) => const History(),
+              ),
             ],
           ),
           StatefulShellBranch(
