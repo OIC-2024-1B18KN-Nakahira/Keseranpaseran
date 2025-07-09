@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keseranpaseran/acount_page/account.dart';
@@ -9,7 +8,7 @@ import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
 import 'package:keseranpaseran/setting_page/6_change_email.dart';
 import 'package:keseranpaseran/setting_page/6_email_sent.dart';
 import 'package:keseranpaseran/setting_page/6_search.dart';
-import 'package:keseranpaseran/history.dart';
+import 'package:keseranpaseran/HistoryModels/historyViewPage.dart';
 import 'package:keseranpaseran/home.dart';
 import 'record.dart';
 

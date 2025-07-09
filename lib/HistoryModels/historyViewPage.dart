@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
-/* --------------------------------------------------
- * 履歴画面  ― 睡眠時間 ＆ カフェイン摂取量
- * ・グラフは「右端＝最新日／左へ行くほど古い」
- * ・表示対象は最新日を含む直近 7 日固定
- * ・データが無い日は 0 で補完して描画
- * -------------------------------------------------- */
-
-
-
+import 'sleep_record.dart';
+import 'caffeine_record.dart';
 
 class History extends StatefulWidget {
   const History({super.key});
@@ -24,28 +16,26 @@ class _HistoryState extends State<History> {
 
   /* ---------------- ダミーデータ ---------------- */
 
-  final _sleep = [
-    _Sleep(DateTime(2025, 6, 11), const Duration(hours: 7, minutes: 40)),
-    _Sleep(DateTime(2025, 6, 12), const Duration(hours: 7, minutes: 40)),
-    _Sleep(DateTime(2025, 6, 13), const Duration(hours: 7, minutes: 40)),
-    _Sleep(DateTime(2025, 6, 14), const Duration(hours: 6, minutes: 55)),
-    _Sleep(DateTime(2025, 6, 15), const Duration(hours: 8, minutes: 10)),
-    _Sleep(DateTime(2025, 6, 16), const Duration(hours: 5, minutes: 45)),
-    _Sleep(DateTime(2025, 6, 17), const Duration(hours: 9, minutes: 5)),
-    //_Sleep(DateTime(2025, 6, 18), const Duration(hours: 7, minutes: 20)),
-    _Sleep(DateTime(2025, 6, 19), const Duration(hours: 8, minutes: 30)),
+  final List<SleepRecord> _sleep = [
+    SleepRecord(date: DateTime(2025, 6, 11), duration: const Duration(hours: 7, minutes: 40)),
+    SleepRecord(date: DateTime(2025, 6, 12), duration: const Duration(hours: 7, minutes: 40)),
+    SleepRecord(date: DateTime(2025, 6, 13), duration: const Duration(hours: 7, minutes: 40)),
+    SleepRecord(date: DateTime(2025, 6, 14), duration: const Duration(hours: 6, minutes: 55)),
+    SleepRecord(date: DateTime(2025, 6, 15), duration: const Duration(hours: 8, minutes: 10)),
+    SleepRecord(date: DateTime(2025, 6, 16), duration: const Duration(hours: 5, minutes: 45)),
+    SleepRecord(date: DateTime(2025, 6, 17), duration: const Duration(hours: 9, minutes: 5)),
+    SleepRecord(date: DateTime(2025, 6, 19), duration: const Duration(hours: 8, minutes: 30)),
   ];
 
-  final _caf = [
-    _Caf(DateTime(2025, 6, 11), 200),
-    _Caf(DateTime(2025, 6, 12), 150),
-    _Caf(DateTime(2025, 6, 13), 300),
-    _Caf(DateTime(2025, 6, 14), 180),
-    _Caf(DateTime(2025, 6, 15), 450),
-    _Caf(DateTime(2025, 6, 16), 500),
-    _Caf(DateTime(2025, 6, 17), 120),
-    //_Caf(DateTime(2025, 6, 18), 350),
-    _Caf(DateTime(2025, 6, 19), 420),
+  final List<CaffeineRecord> _caf = [
+    CaffeineRecord(date: DateTime(2025, 6, 11), mg: 200),
+    CaffeineRecord(date: DateTime(2025, 6, 12), mg: 150),
+    CaffeineRecord(date: DateTime(2025, 6, 13), mg: 300),
+    CaffeineRecord(date: DateTime(2025, 6, 14), mg: 180),
+    CaffeineRecord(date: DateTime(2025, 6, 15), mg: 450),
+    CaffeineRecord(date: DateTime(2025, 6, 16), mg: 500),
+    CaffeineRecord(date: DateTime(2025, 6, 17), mg: 120),
+    CaffeineRecord(date: DateTime(2025, 6, 19), mg: 420),
   ];
 
   /* ---------- 共通ヘルパー ---------- */
@@ -55,34 +45,37 @@ class _HistoryState extends State<History> {
   DateTime _toDay(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _fmtDur(Duration d) => '${d.inHours}h${d.inMinutes.remainder(60)}m';
-  String _fmtMg(int mg)      => '${mg}mg';
+
+  String _fmtMg(int mg) => '${mg}mg';
 
   /* ---------- グラフ専用 Getter（最新から 7 日固定） ---------- */
 
-  List<_Sleep> get _sleepGraph {
+  List<SleepRecord> get _sleepGraph {
     if (_sleep.isEmpty) return [];
     final latestDay = _toDay(
-        _sleep.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date);
+      _sleep.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date,
+    );
 
     final map = {for (var e in _sleep) _key(e.date): e};
 
-    // latestDay - 6 〜 latestDay の 7 日分（古 → 新）
+    // latestDay -6 〜 latestDay の 7 日分（古 → 新）
     return List.generate(7, (i) {
       final d = latestDay.subtract(Duration(days: 6 - i));
-      return map[_key(d)] ?? _Sleep(d, Duration.zero);
+      return map[_key(d)] ?? SleepRecord(date: d, duration: Duration.zero);
     });
   }
 
-  List<_Caf> get _cafGraph {
+  List<CaffeineRecord> get _cafGraph {
     if (_caf.isEmpty) return [];
-    final latestDay =
-    _toDay(_caf.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date);
+    final latestDay = _toDay(
+      _caf.reduce((a, b) => a.date.isAfter(b.date) ? a : b).date,
+    );
 
     final map = {for (var e in _caf) _key(e.date): e};
 
     return List.generate(7, (i) {
       final d = latestDay.subtract(Duration(days: 6 - i));
-      return map[_key(d)] ?? _Caf(d, 0);
+      return map[_key(d)] ?? CaffeineRecord(date: d, mg: 0);
     });
   }
 
@@ -123,12 +116,11 @@ class _HistoryState extends State<History> {
 
   /* -------------------- 睡眠ビュー -------------------- */
   Widget _sleepView() {
-    final graphList = _sleepGraph; // 7 日（古 → 新）
-    final recordList = _sleep; // 全件
+    final graphList = _sleepGraph;
+    final recordList = _sleep;
 
     return Column(
       children: [
-        /* ---- 折れ線グラフ ---- */
         SizedBox(
           height: 180,
           child: Padding(
@@ -143,15 +135,14 @@ class _HistoryState extends State<History> {
                 maxY: 24,
                 gridData: FlGridData(show: false),
                 borderData: FlBorderData(show: false),
-                // タッチしたときの挙動
                 lineTouchData: LineTouchData(
                   handleBuiltInTouches: true,
                   touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (LineBarSpot spot) => Colors.blueGrey,
+                    getTooltipColor: (spot) => Colors.blueGrey,
                     getTooltipItems: (spots) => spots.map((s) {
                       final idx = s.x.toInt();
                       return LineTooltipItem(
-                        _fmtDur(graphList[idx].dur),      // 例: 7h40m
+                        _fmtDur(graphList[idx].duration),
                         const TextStyle(color: Colors.white),
                       );
                     }).toList(),
@@ -159,8 +150,7 @@ class _HistoryState extends State<History> {
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
-                    sideTitles:
-                    SideTitles(showTitles: true, reservedSize: 28),
+                    sideTitles: SideTitles(showTitles: true, reservedSize: 28),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -171,9 +161,7 @@ class _HistoryState extends State<History> {
                         if (i < 0 || i >= graphList.length) {
                           return const SizedBox.shrink();
                         }
-                        // 右端＝最新へ反転
-                        final d =
-                            graphList[i].date;
+                        final d = graphList[i].date;
                         return Text('${d.month}/${d.day}',
                             style: const TextStyle(fontSize: 10));
                       },
@@ -195,7 +183,7 @@ class _HistoryState extends State<History> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.blue.withAlpha(77), // 0.3 * 255
+                          Colors.blue.withAlpha(77),
                           Colors.transparent,
                         ],
                       ),
@@ -204,7 +192,7 @@ class _HistoryState extends State<History> {
                       for (var i = 0; i < graphList.length; i++)
                         FlSpot(
                           i.toDouble(),
-                          graphList[i].dur.inMinutes / 60.0,       // ★ ここだけ変更
+                          graphList[i].duration.inMinutes / 60.0,
                         ),
                     ],
                   ),
@@ -213,15 +201,14 @@ class _HistoryState extends State<History> {
             ),
           ),
         ),
-        /* ---- リスト（全件） ---- */
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: recordList.length,
             itemBuilder: (_, i) {
               final d = recordList[i];
-              final h = d.dur.inHours;
-              final m = d.dur.inMinutes.remainder(60);
+              final h = d.duration.inHours;
+              final m = d.duration.inMinutes.remainder(60);
               return _RecordTile(
                 date: d.date,
                 value: '${h}h${m}m',
@@ -237,8 +224,8 @@ class _HistoryState extends State<History> {
 
   /* ----------------- カフェインビュー ----------------- */
   Widget _caffeineView() {
-    final graphList = _cafGraph; // 7 日（古 → 新）
-    final recordList = _caf; // 全件
+    final graphList = _cafGraph;
+    final recordList = _caf;
     const limit = 400;
 
     return Column(
@@ -254,22 +241,19 @@ class _HistoryState extends State<History> {
                 maxY: 1000,
                 gridData: FlGridData(show: false),
                 borderData: FlBorderData(show: false),
-                // タッチしたときの挙動
                 barTouchData: BarTouchData(
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (BarChartGroupData group) => Colors.blueGrey,
-                    getTooltipItem: (group, _, rod, __) =>
-                        BarTooltipItem(
-                          _fmtMg(graphList[group.x].mg),   // 例: 120mg
-                          const TextStyle(color: Colors.white),
-                        ),
+                    getTooltipColor: (group) => Colors.blueGrey,
+                    getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                      _fmtMg(graphList[group.x].mg),
+                      const TextStyle(color: Colors.white),
+                    ),
                   ),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
-                    sideTitles:
-                    SideTitles(showTitles: true, reservedSize: 40),
+                    sideTitles: SideTitles(showTitles: true, reservedSize: 40),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -277,28 +261,31 @@ class _HistoryState extends State<History> {
                       interval: 1,
                       getTitlesWidget: (value, meta) {
                         final i = value.toInt();
-                        if (i < 0 || i >= graphList.length) {
-                          return const SizedBox.shrink();
-                        }
-                        final d = graphList[i].date;               // ★ ここだけ変更
+                        if (i < 0 || i >= graphList.length) return const SizedBox.shrink();
+                        final d = graphList[i].date;
                         return Text('${d.month}/${d.day}');
                       },
                     ),
                   ),
                   topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                 ),
                 barGroups: [
                   for (var i = 0; i < graphList.length; i++)
-                    BarChartGroupData(x: i, barRods: [
-                      BarChartRodData(
-                        toY: graphList[i].mg.toDouble(),         // ★ ここだけ変更
-                        width: 18,
-                        color: Colors.grey.shade400,
-                      )
-                    ]),
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: graphList[i].mg.toDouble(),
+                          width: 18,
+                          color: Colors.grey.shade400,
+                        )
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -321,22 +308,7 @@ class _HistoryState extends State<History> {
   }
 }
 
-/* ---------------- ヘルパークラス ---------------- */
-
-class _Sleep {
-  final DateTime date;
-  final Duration dur;
-  _Sleep(this.date, this.dur);
-}
-
-class _Caf {
-  final DateTime date;
-  final int mg;
-  _Caf(this.date, this.mg);
-}
-
 /* ---------------- 共通タイル ---------------- */
-
 class _RecordTile extends StatelessWidget {
   final DateTime date;
   final String value;
@@ -363,9 +335,11 @@ class _RecordTile extends StatelessWidget {
           Expanded(
               child: Text(
                   '${date.year}/${_pad(date.month)}/${_pad(date.day)}')),
-          Text(value,
-              style: TextStyle(
-                  color: txt, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(
+            value,
+            style: TextStyle(
+                color: txt, fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ],
       ),
     );

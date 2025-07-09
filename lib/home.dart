@@ -21,7 +21,7 @@ class _HomeState extends State<Home> {
           //画像を表示
           Center(
             child: Image.asset(
-              'assets/raw.png',
+              'assets/KeseranPaseran/KeseranpaseranDie.png',
               width: 220, // 必要に応じて調整
               height: 220,
               fit: BoxFit.contain,
