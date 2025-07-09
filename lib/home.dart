@@ -1,14 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:keseranpaseran/widget/appbar_widget.dart';
 
+import 'HistoryModels/caffeine_record.dart';
+import 'HistoryModels/sleep_record.dart';
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
   State<Home> createState() => _HomeState();
 }
+bool isSameDate(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 class _HomeState extends State<Home> {
+  // ダミーデータ（本当は実際のデータに置き換え）
+  final List<SleepRecord> dummySleepRecords = [
+    SleepRecord(date: DateTime.now(), duration: Duration(hours: 7, minutes: 30))
+  ];
+  final List<CaffeineRecord> dummyCaffeineRecords = [
+    CaffeineRecord(date: DateTime.now(), mg: 200)
+  ];
+
+  // 今日の記録状態を返す関数
+  String getTodayState() {
+    DateTime today = DateTime.now();
+    bool hasSleep = dummySleepRecords.any((record) => isSameDate(record.date, today));
+    bool hasCaffeine = dummyCaffeineRecords.any((record) => isSameDate(record.date, today));
+    if (!hasSleep && !hasCaffeine) {
+      return "死んでる"; // どちらもなければ死んでるモーション
+    } else if (hasSleep && hasCaffeine) {
+      return "健康的"; // 両方ある場合はgood
+    } else {
+      return "悪い"; // 片方のみであればbad
+    }
+  }
+
+  // 状態に応じた画像のパスを返す関数
+  String getStateImage() {
+    final state = getTodayState();
+    if (state == "死んでる") {
+      return "assets/KeseranPaseran/KeseranpaseranDie.png";
+    } else if (state == "健康的") {
+      return "assets/KeseranPaseran/KeseranpaseranGood.png";
+    } else {
+      return "assets/KeseranPaseran/KeseranpaseranBad.png";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,7 +60,7 @@ class _HomeState extends State<Home> {
           //画像を表示
           Center(
             child: Image.asset(
-              'assets/KeseranPaseran/KeseranpaseranDie.png',
+              getStateImage(),
               width: 220, // 必要に応じて調整
               height: 220,
               fit: BoxFit.contain,
@@ -92,7 +131,7 @@ class _HomeState extends State<Home> {
                           ),
                         ),
                         SizedBox(height: 8),
-                        Text('すごく悪い'),
+                        Text(getTodayState()),
                       ],
                     ),
                   ),

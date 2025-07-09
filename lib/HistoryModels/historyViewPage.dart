@@ -16,7 +16,7 @@ class _HistoryState extends State<History> {
 
   /* ---------------- ダミーデータ ---------------- */
 
-  final List<SleepRecord> _sleep = [
+  static final List<SleepRecord> _sleep = [
     SleepRecord(date: DateTime(2025, 6, 11), duration: const Duration(hours: 7, minutes: 40)),
     SleepRecord(date: DateTime(2025, 6, 12), duration: const Duration(hours: 7, minutes: 40)),
     SleepRecord(date: DateTime(2025, 6, 13), duration: const Duration(hours: 7, minutes: 40)),
@@ -27,7 +27,7 @@ class _HistoryState extends State<History> {
     SleepRecord(date: DateTime(2025, 6, 19), duration: const Duration(hours: 8, minutes: 30)),
   ];
 
-  final List<CaffeineRecord> _caf = [
+  static final List<CaffeineRecord> _caf = [
     CaffeineRecord(date: DateTime(2025, 6, 11), mg: 200),
     CaffeineRecord(date: DateTime(2025, 6, 12), mg: 150),
     CaffeineRecord(date: DateTime(2025, 6, 13), mg: 300),
