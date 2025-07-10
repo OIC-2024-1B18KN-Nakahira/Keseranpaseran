@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keseranpaseran/acount_page/account.dart';
-import 'package:keseranpaseran/acount_page/account_setting.dart';
 import 'package:keseranpaseran/acount_page/login.dart';
+import 'package:keseranpaseran/acount_page/account_setting.dart';
+import 'package:keseranpaseran/acount_page/account_create.dart';
 import 'package:keseranpaseran/setting_page/6.dart';
 import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
 import 'package:keseranpaseran/setting_page/6_change_email.dart';
@@ -21,8 +21,8 @@ final GlobalKey<NavigatorState> homeNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> accountNavigatorKey =
     GlobalKey<NavigatorState>();
 
-class AppRouter extends StatelessWidget {
-  AppRouter({super.key});
+class MyApp extends StatelessWidget {
+  MyApp({super.key});
 
   final router = GoRouter(
     initialLocation: '/login',
