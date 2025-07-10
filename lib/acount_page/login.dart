@@ -1,53 +1,120 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 30),
-              child: Column(
-                children: [
-                  Text(
-                    'アカウントにログイン',
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
-                  ),
-                  const Divider(
-                    height: 20,
-                    thickness: 2,
-                    indent: 50,
-                    endIndent: 50,
-                    color: Color.fromARGB(255, 212, 211, 211),
-                  ),
-                ],
-              ),
-            ),
+    return Scaffold(body: Center(child: LoginForm()));
+  }
+}
 
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 30),
-              child: TextBox(
-                controller: TextEditingController(),
-                passwordController: TextEditingController(),
+class LoginForm extends StatefulWidget {
+  @override
+  State<LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<LoginForm> {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  bool isLoading = false;
+  String errorMessage = '';
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> signInUser() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final AuthResponse response = await supabase.auth.signInWithPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      if (response.user != null) {
+        if (mounted) {
+          context.go('/home');
+        }
+      }
+    } on AuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (error) {
+      setState(() {
+        errorMessage = 'ログインに失敗しました: $error';
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 30),
+          child: Column(
+            children: [
+              Text(
+                'アカウントにログイン',
+                style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: LoginButton(),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(children: [PassButton(), RegisterButton()]),
-            ),
-          ],
+              const Divider(
+                height: 20,
+                thickness: 2,
+                indent: 50,
+                endIndent: 50,
+                color: Color.fromARGB(255, 212, 211, 211),
+              ),
+            ],
+          ),
         ),
-      ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 30),
+          child: TextBox(
+            controller: emailController,
+            passwordController: passwordController,
+          ),
+        ),
+        // エラーメッセージを表示
+        if (errorMessage.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              errorMessage,
+              style: TextStyle(color: Colors.red, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+          child: LoginButton(
+            onPressed: isLoading ? null : signInUser,
+            isLoading: isLoading,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(children: [PassButton(), RegisterButton()]),
+        ),
+      ],
     );
   }
 }
@@ -55,7 +122,11 @@ class LoginPage extends StatelessWidget {
 class TextBox extends StatefulWidget {
   final TextEditingController controller;
   final TextEditingController passwordController;
-  const TextBox({super.key, required this.controller, required this.passwordController});
+  const TextBox({
+    super.key,
+    required this.controller,
+    required this.passwordController,
+  });
 
   @override
   State<TextBox> createState() => _TextBoxState();
@@ -90,7 +161,7 @@ class _TextBoxState extends State<TextBox> {
         TextField(
           controller: widget.passwordController,
           onChanged: _onChanged,
-          obscureText: isObscure, // パスワードが初めから見えないように設定
+          obscureText: isObscure,
           decoration: InputDecoration(
             suffixIcon: IconButton(
               icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
@@ -112,19 +183,36 @@ class _TextBoxState extends State<TextBox> {
 }
 
 class LoginButton extends StatelessWidget {
-  const LoginButton({super.key});
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  const LoginButton({
+    super.key,
+    required this.onPressed,
+    required this.isLoading,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-      onPressed: () => context.push('/home'),
+      onPressed: onPressed,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
-        child: Text(
-          'ログイン',
-          style: TextStyle(color: Colors.white, fontSize: 30),
-        ),
+        child:
+            isLoading
+                ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                : Text(
+                  'ログイン',
+                  style: TextStyle(color: Colors.white, fontSize: 30),
+                ),
       ),
     );
   }
