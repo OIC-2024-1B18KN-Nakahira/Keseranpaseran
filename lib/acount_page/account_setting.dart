@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-
 class AccountCreate2 extends StatelessWidget {
   const AccountCreate2({super.key});
 
@@ -97,7 +96,7 @@ class YesNOButton extends StatelessWidget {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             onPressed: () => context.push('/account_create'),
             child: Text(
-              "次へ",
+              "保存",
               style: TextStyle(color: Colors.white, fontSize: 30),
             ),
           ),
@@ -113,7 +112,7 @@ class BackLoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () => Navigator.pop(context),
+      onPressed: () => context.push('/account_create'),
       child: Text(
         "ログイン画面はこちら",
         style: TextStyle(

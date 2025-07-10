@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'account.dart';
 
-class AccountCreate extends StatelessWidget {
-  const AccountCreate({super.key});
+class LoginPage extends StatelessWidget {
+  const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +32,18 @@ class AccountCreate extends StatelessWidget {
 
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 30),
-              child: TextBox(),
+              child: TextBox(
+                controller: TextEditingController(),
+                passwordController: TextEditingController(),
+              ),
             ),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child: AccountCreatButton(),
+              child: LoginButton(),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(children: [PassButton(), RegisterButton()]),
             ),
           ],
         ),
@@ -47,8 +52,67 @@ class AccountCreate extends StatelessWidget {
   }
 }
 
-class AccountCreatButton extends StatelessWidget {
-  const AccountCreatButton({super.key});
+class TextBox extends StatefulWidget {
+  final TextEditingController controller;
+  final TextEditingController passwordController;
+  const TextBox({super.key, required this.controller, required this.passwordController});
+
+  @override
+  State<TextBox> createState() => _TextBoxState();
+}
+
+class _TextBoxState extends State<TextBox> {
+  bool isObscure = true;
+
+  String text = '';
+  void _onChanged(String e) {
+    setState(() {
+      text = e;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('メールアドレス'),
+        TextField(
+          controller: widget.controller,
+          decoration: const InputDecoration(
+            hintText: 'メールアドレス',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+            ),
+          ),
+        ),
+        Text('パスワード'),
+        TextField(
+          controller: widget.passwordController,
+          onChanged: _onChanged,
+          obscureText: isObscure, // パスワードが初めから見えないように設定
+          decoration: InputDecoration(
+            suffixIcon: IconButton(
+              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+              onPressed: () {
+                setState(() {
+                  isObscure = !isObscure;
+                });
+              },
+            ),
+            hintText: 'パスワード',
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(15)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class LoginButton extends StatelessWidget {
+  const LoginButton({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -56,14 +120,52 @@ class AccountCreatButton extends StatelessWidget {
       style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
       onPressed: () => context.push('/home'),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
         child: Text(
-          'アカウント作成',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-          ),
+          'ログイン',
+          style: TextStyle(color: Colors.white, fontSize: 30),
+        ),
+      ),
+    );
+  }
+}
+
+class PassButton extends StatelessWidget {
+  const PassButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () {},
+      child: Text(
+        'パスワードを忘れた方はこちら',
+        style: TextStyle(
+          color: Colors.blue,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.blue,
+        ),
+      ),
+    );
+  }
+}
+
+class RegisterButton extends StatelessWidget {
+  const RegisterButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: () => context.push('/account_create2'),
+      child: Text(
+        'アカウント作成はこちら',
+        style: TextStyle(
+          color: Colors.blue,
+          fontSize: 15,
+          fontWeight: FontWeight.bold,
+          decoration: TextDecoration.underline,
+          decorationColor: Colors.blue,
         ),
       ),
     );
