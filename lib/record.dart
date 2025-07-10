@@ -1,9 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 //他のファイルで作成したwidgetを使う
 import 'widget/appbar_widget.dart'; //追加
 
-class Record extends StatelessWidget {
+final supabase = Supabase.instance.client;
+
+class Record extends StatefulWidget {
   const Record({super.key});
+
+  @override
+  State<Record> createState() => _RecordState();
+}
+
+class _RecordState extends State<Record> {
+  DateTime selectedDateTime = DateTime.now();
+  String selectedDrink = "コーヒー";
+  int selectedAmount = 350; // ml
+  TimeOfDay? bedtime;
+  TimeOfDay? wakeTime;
+
+  // データを保存する関数
+  Future<void> saveRecord() async {
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ログインが必要です')));
+        return;
+      }
+
+      // カフェイン記録を保存
+      await supabase.from('caffeine_records').insert({
+        'user_id': user.id,
+        'recorded_at': selectedDateTime.toIso8601String(),
+        'drink_type': selectedDrink,
+        'amount_ml': selectedAmount,
+      });
+
+      // 睡眠記録を保存（就寝時間と起床時間が両方設定されている場合）
+      if (bedtime != null && wakeTime != null) {
+        final today = DateTime.now();
+        final bedDateTime = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          bedtime!.hour,
+          bedtime!.minute,
+        );
+        final wakeDateTime = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          wakeTime!.hour,
+          wakeTime!.minute,
+        );
+
+        // 起床時間が就寝時間より早い場合は翌日と判断
+        final adjustedWakeTime =
+            wakeDateTime.isBefore(bedDateTime)
+                ? wakeDateTime.add(Duration(days: 1))
+                : wakeDateTime;
+
+        final duration = adjustedWakeTime.difference(bedDateTime);
+
+        await supabase.from('sleep_records').insert({
+          'user_id': user.id,
+          'record_date': today.toIso8601String().split('T')[0],
+          'bedtime':
+              '${bedtime!.hour.toString().padLeft(2, '0')}:${bedtime!.minute.toString().padLeft(2, '0')}:00',
+          'wake_time':
+              '${wakeTime!.hour.toString().padLeft(2, '0')}:${wakeTime!.minute.toString().padLeft(2, '0')}:00',
+          'sleep_duration_minutes': duration.inMinutes,
+        });
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('記録を保存しました')));
+    } catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +112,43 @@ class Record extends StatelessWidget {
                         border: Border.all(color: Colors.black, width: 1),
                         borderRadius: BorderRadius.circular(5),
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 2,
-                        ),
-                        child: Text(
-                          "2025年1月1日 　12:00",
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                      child: InkWell(
+                        onTap: () async {
+                          final DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: selectedDateTime,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            final TimeOfDay? time = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.fromDateTime(
+                                selectedDateTime,
+                              ),
+                            );
+                            if (time != null) {
+                              setState(() {
+                                selectedDateTime = DateTime(
+                                  picked.year,
+                                  picked.month,
+                                  picked.day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                              });
+                            }
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            "${selectedDateTime.year}年${selectedDateTime.month}月${selectedDateTime.day}日　${selectedDateTime.hour.toString().padLeft(2, '0')}:${selectedDateTime.minute.toString().padLeft(2, '0')}",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ),
@@ -47,7 +156,13 @@ class Record extends StatelessWidget {
                 ),
               ),
               Text("飲み物の種類", style: TextStyle(fontWeight: FontWeight.bold)),
-              Meun(),
+              Meun(
+                onDrinkChanged: (drink) {
+                  setState(() {
+                    selectedDrink = drink;
+                  });
+                },
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: Container(
@@ -69,7 +184,13 @@ class Record extends StatelessWidget {
                       horizontal: 20,
                       vertical: 10,
                     ),
-                    child: DrinkButton(),
+                    child: DrinkButton(
+                      onAmountChanged: (amount) {
+                        setState(() {
+                          selectedAmount = amount;
+                        });
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -104,7 +225,20 @@ class Record extends StatelessWidget {
                           horizontal: 10,
                           vertical: 10,
                         ),
-                        child: TimeButton(),
+                        child: TimeButton(
+                          bedtime: bedtime,
+                          wakeTime: wakeTime,
+                          onBedtimeChanged: (time) {
+                            setState(() {
+                              bedtime = time;
+                            });
+                          },
+                          onWakeTimeChanged: (time) {
+                            setState(() {
+                              wakeTime = time;
+                            });
+                          },
+                        ),
                       ),
                     ),
                   ],
@@ -112,7 +246,7 @@ class Record extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 20),
-                child: Center(child: RecoedButton()),
+                child: Center(child: RecoedButton(onPressed: saveRecord)),
               ),
             ],
           ),
@@ -123,7 +257,9 @@ class Record extends StatelessWidget {
 }
 
 class Meun extends StatefulWidget {
-  const Meun({super.key});
+  final Function(String) onDrinkChanged;
+
+  const Meun({super.key, required this.onDrinkChanged});
 
   @override
   State<Meun> createState() => _MeunState();
@@ -137,7 +273,6 @@ class _MeunState extends State<Meun> {
     return IntrinsicWidth(
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: 160),
-
         child: DropdownButtonFormField(
           decoration: InputDecoration(
             contentPadding: EdgeInsets.only(left: 10),
@@ -199,6 +334,7 @@ class _MeunState extends State<Meun> {
             setState(() {
               selecteDrink = newValue!;
             });
+            widget.onDrinkChanged(newValue!);
           },
         ),
       ),
@@ -207,7 +343,10 @@ class _MeunState extends State<Meun> {
 }
 
 class DrinkButton extends StatefulWidget {
-  const DrinkButton({Key? key}) : super(key: key);
+  final Function(int) onAmountChanged;
+
+  const DrinkButton({Key? key, required this.onAmountChanged})
+    : super(key: key);
 
   @override
   _DrinkButtonState createState() => _DrinkButtonState();
@@ -221,6 +360,7 @@ class _DrinkButtonState extends State<DrinkButton> {
     String label,
     String imagePath,
     String volume,
+    int amountMl,
   ) {
     final bool isSelected = selectedIndex == index;
     return Stack(
@@ -260,6 +400,7 @@ class _DrinkButtonState extends State<DrinkButton> {
                 setState(() {
                   selectedIndex = index;
                 });
+                widget.onAmountChanged(amountMl);
               },
               splashColor: Colors.blue.withOpacity(0.1),
               highlightColor: Colors.transparent,
@@ -281,12 +422,14 @@ class _DrinkButtonState extends State<DrinkButton> {
           "0.5杯",
           "assets/drink_coffee_cup01_espresso.png",
           "350ml",
+          350,
         ),
         drinkCupButton(
           1,
           "1杯",
           "assets/drink_coffee_cup07_american.png",
           "500ml",
+          500,
         ),
         // 画像を2つ表示するボタン
         Stack(
@@ -341,6 +484,7 @@ class _DrinkButtonState extends State<DrinkButton> {
                     setState(() {
                       selectedIndex = 2;
                     });
+                    widget.onAmountChanged(1000);
                   },
                   splashColor: Colors.blue.withOpacity(0.1),
                   highlightColor: Colors.transparent,
@@ -356,7 +500,18 @@ class _DrinkButtonState extends State<DrinkButton> {
 }
 
 class TimeButton extends StatelessWidget {
-  const TimeButton({super.key});
+  final TimeOfDay? bedtime;
+  final TimeOfDay? wakeTime;
+  final Function(TimeOfDay) onBedtimeChanged;
+  final Function(TimeOfDay) onWakeTimeChanged;
+
+  const TimeButton({
+    super.key,
+    required this.bedtime,
+    required this.wakeTime,
+    required this.onBedtimeChanged,
+    required this.onWakeTimeChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -383,11 +538,15 @@ class TimeButton extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),
-                            onTap: () {
-                              showDialog(
+                            onTap: () async {
+                              final TimeOfDay? picked = await showTimePicker(
                                 context: context,
-                                builder: (context) => const TimeDialog(),
+                                initialTime:
+                                    bedtime ?? TimeOfDay(hour: 22, minute: 0),
                               );
+                              if (picked != null) {
+                                onBedtimeChanged(picked);
+                              }
                             },
                             splashColor: Colors.blue.withOpacity(0.1),
                             highlightColor: Colors.transparent,
@@ -419,7 +578,9 @@ class TimeButton extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 50, top: 50),
                     child: Text(
-                      "00:00",
+                      bedtime != null
+                          ? "${bedtime!.hour.toString().padLeft(2, '0')}:${bedtime!.minute.toString().padLeft(2, '0')}"
+                          : "00:00",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -451,11 +612,15 @@ class TimeButton extends StatelessWidget {
                           color: Colors.transparent,
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),
-                            onTap: () {
-                              showDialog(
+                            onTap: () async {
+                              final TimeOfDay? picked = await showTimePicker(
                                 context: context,
-                                builder: (context) => const TimeDialog(),
+                                initialTime:
+                                    wakeTime ?? TimeOfDay(hour: 6, minute: 0),
                               );
+                              if (picked != null) {
+                                onWakeTimeChanged(picked);
+                              }
                             },
                             splashColor: Colors.blue.withOpacity(0.1),
                             highlightColor: Colors.transparent,
@@ -487,7 +652,9 @@ class TimeButton extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(left: 50, top: 50),
                     child: Text(
-                      "00:00",
+                      wakeTime != null
+                          ? "${wakeTime!.hour.toString().padLeft(2, '0')}:${wakeTime!.minute.toString().padLeft(2, '0')}"
+                          : "00:00",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -559,7 +726,9 @@ class TimeDialog extends StatelessWidget {
 }
 
 class RecoedButton extends StatelessWidget {
-  const RecoedButton({super.key});
+  final VoidCallback onPressed;
+
+  const RecoedButton({super.key, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -568,7 +737,7 @@ class RecoedButton extends StatelessWidget {
         side: BorderSide(color: Colors.orange, width: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
-      onPressed: () {},
+      onPressed: onPressed,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: Text("記録", style: TextStyle(fontSize: 20, color: Colors.orange)),
