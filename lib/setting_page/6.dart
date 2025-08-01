@@ -1,6 +1,7 @@
 // lib/6.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '6_nitice_button.dart'; 
 
 class Account extends StatelessWidget {
   const Account({super.key});
@@ -20,7 +21,14 @@ class Account extends StatelessWidget {
           const SizedBox(height: 24),
           _item(context,
           title: '通知設定', 
-          onTap: () => context.pushNamed('notificationSettings')),
+         onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationSettings(),
+              ),
+            );
+          }),
           _item(
             context,
             title: 'プロフィール編集',
