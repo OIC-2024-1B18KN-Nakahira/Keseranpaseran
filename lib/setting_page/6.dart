@@ -18,6 +18,9 @@ class Account extends StatelessWidget {
             child: Icon(Icons.person, size: 48, color: Colors.white),
           ),
           const SizedBox(height: 24),
+          _item(context,
+          title: '通知設定', 
+          onTap: () => context.pushNamed('notificationSettings')),
           _item(
             context,
             title: 'プロフィール編集',
