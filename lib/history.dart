@@ -403,12 +403,15 @@ class _HistoryState extends State<History> {
                   : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: recordList.length,
-                    itemBuilder:
-                        (_, i) => _RecordTile(
-                          date: recordList[i].date,
-                          value: '${recordList[i].mg}mg',
-                          highlight: recordList[i].mg > limit,
-                        ),
+                    itemBuilder: (_, i) {
+                      final d = recordList[i];
+                      final mgValue = d.mg;
+                      return _RecordTile(
+                        date: d.date,
+                        value: '${mgValue}mg',
+                        highlight: mgValue >= limit,
+                      );
+                    },
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                   ),
         ),
