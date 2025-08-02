@@ -1,17 +1,37 @@
-# keseranpaseran
+# カフェイン摂取睡眠管理アプリ
 
-A new Flutter project.
+このアプリは、一日のカフェイン摂取量と睡眠時間を記録・管理できるFlutter製アプリです。
 
-## Getting Started
+## 主な特徴
 
-This project is a starting point for a Flutter application.
+- **カフェイン摂取量と睡眠時間の記録**  
+  毎日のカフェイン摂取量と睡眠時間を簡単に記録できます。
 
-A few resources to get you started if this is your first Flutter project:
+- **ホーム画面のキャラクター変化**  
+  記録した内容に応じて、ホーム画面の「ケセランパセラン」の体調が変化します。
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- **記録の可視化**  
+  記録画面で、これまでのカフェイン摂取量や睡眠時間をグラフなどで可視化できます。
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
-# Keseranpaseran
+- **セキュアなログイン機能**  
+  アプリを利用するにはログイン（新規登録）が必須。あなたの記録データをしっかり守ります。
+
+- **毎日10時の通知機能**  
+  設定画面で通知を許可すると、毎日朝10時に「記録を忘れないように」通知が届きます。
+
+## 使い方
+
+1. アプリをインストールし、最初にログインまたは新規登録を行います。
+2. ホーム画面でカフェイン摂取量や睡眠時間を記録します。
+3. 記録画面で過去のデータを確認・可視化できます。
+4. 設定画面で通知をONにすると、毎日10時に記録を促す通知が届きます。
+
+## こんな人におすすめ
+
+- カフェイン摂取量を管理したい方
+- 睡眠習慣を見直したい方
+- 記録を続けるモチベーションが欲しい方
+
+---
+
+あなたの健康管理を「ケセランパセラン」と一緒に楽しく続けましょう！
