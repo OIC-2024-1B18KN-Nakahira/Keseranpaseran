@@ -15,20 +15,56 @@ class Record extends StatefulWidget {
 class _RecordState extends State<Record> {
   DateTime selectedDateTime = DateTime.now();
   String selectedDrink = "コーヒー";
-  int selectedAmount = 350; // ml
+  int selectedAmount = 200; // 200mlに修正（1杯の標準サイズ）
   TimeOfDay? bedtime;
   TimeOfDay? wakeTime;
+
+  // カフェイン含有量を計算する関数
+  double calculateCaffeineAmount() {
+    switch (selectedDrink) {
+      case "コーラ":
+        // コーラ: 40mg/1缶(350ml)
+        return (selectedAmount / 350.0) * 40.0;
+
+      case "コーヒー":
+      case "紅茶":
+        // コーヒー・紅茶: 60mg/1杯(200ml)
+        return (selectedAmount / 200.0) * 60.0;
+
+      case "栄養ドリンク":
+      case "エナジードリンク":
+        // 栄養ドリンク・エナジードリンク: 150mg/1本(100ml)
+        return (selectedAmount / 100.0) * 150.0;
+
+      case "緑茶":
+        // 緑茶: 20mg/1杯(200ml)
+        return (selectedAmount / 200.0) * 20.0;
+
+      case "ウーロン茶":
+        // ウーロン茶: 20mg/1杯(200ml)
+        return (selectedAmount / 200.0) * 20.0;
+
+      case "ココア":
+        // ココア: 5mg/1杯(200ml)
+        return (selectedAmount / 200.0) * 5.0;
+
+      case "その他":
+        // その他: カフェイン含有量を推定（コーヒーと同等）
+        return (selectedAmount / 200.0) * 60.0;
+
+      default:
+        return 0.0;
+    }
+  }
 
   // 入力をリセットする関数
   void resetInputs() {
     setState(() {
       selectedDateTime = DateTime.now();
       selectedDrink = "コーヒー";
-      selectedAmount = 350;
+      selectedAmount = 200; // 200mlに修正
       bedtime = null;
       wakeTime = null;
-      // グローバル変数もリセット
-      selecteDrink = "コーヒー";
     });
   }
 
@@ -43,12 +79,16 @@ class _RecordState extends State<Record> {
         return;
       }
 
+      // カフェイン量を計算
+      final caffeineAmount = calculateCaffeineAmount();
+
       // カフェイン記録を保存
       await supabase.from('caffeine_records').insert({
         'user_id': user.id,
         'recorded_at': selectedDateTime.toIso8601String(),
         'drink_type': selectedDrink,
         'amount_ml': selectedAmount,
+        'caffeine_mg': caffeineAmount.round(), // カフェイン量も保存
       });
 
       // 睡眠記録を保存（就寝時間と起床時間が両方設定されている場合）
@@ -91,9 +131,13 @@ class _RecordState extends State<Record> {
       // 保存成功後にリセット
       resetInputs();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('記録を保存しました')));
+      // 計算されたカフェイン量を表示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('記録を保存しました（カフェイン: ${caffeineAmount.round()}mg）'),
+          duration: Duration(seconds: 3),
+        ),
+      );
     } catch (error) {
       ScaffoldMessenger.of(
         context,
@@ -103,6 +147,9 @@ class _RecordState extends State<Record> {
 
   @override
   Widget build(BuildContext context) {
+    // 現在のカフェイン量を計算して表示
+    final currentCaffeine = calculateCaffeineAmount();
+
     return Scaffold(
       appBar: AppBar(title: Calendar(), actions: [AppTitle()]), //追加
       body: SingleChildScrollView(
@@ -112,6 +159,33 @@ class _RecordState extends State<Record> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("記録", style: TextStyle(fontWeight: FontWeight.bold)),
+
+              // カフェイン量表示
+              Container(
+                margin: EdgeInsets.symmetric(vertical: 10),
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '予想カフェイン量: ${currentCaffeine.round()}mg',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Column(
@@ -283,7 +357,7 @@ class Meun extends StatefulWidget {
   State<Meun> createState() => _MeunState();
 }
 
-String selecteDrink = "コーヒー"; //選択された飲み物の初期値
+String selecteDrink = "コーヒー"; // このグローバル変数が問題を起こす可能性
 
 class _MeunState extends State<Meun> {
   @override
@@ -301,42 +375,56 @@ class _MeunState extends State<Meun> {
             DropdownMenuItem(
               value: "コーヒー",
               child: Text(
-                "コーヒー",
+                "コーヒー (60mg/200ml)",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
             DropdownMenuItem(
               value: "紅茶",
               child: Text(
-                "紅茶",
+                "紅茶 (60mg/200ml)",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
             DropdownMenuItem(
-              value: "緑茶",
+              value: "コーラ",
               child: Text(
-                "緑茶",
+                "コーラ (40mg/350ml)",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
             DropdownMenuItem(
-              value: "ウーロン茶",
+              value: "栄養ドリンク",
               child: Text(
-                "ウーロン茶",
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ),
-            DropdownMenuItem(
-              value: "ココア",
-              child: Text(
-                "ココア",
+                "栄養ドリンク (150mg/100ml)",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
             DropdownMenuItem(
               value: "エナジードリンク",
               child: Text(
-                "エナジードリンク",
+                "エナジードリンク (150mg/100ml)",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+            DropdownMenuItem(
+              value: "緑茶",
+              child: Text(
+                "緑茶 (20mg/200ml)",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+            DropdownMenuItem(
+              value: "ウーロン茶",
+              child: Text(
+                "ウーロン茶 (20mg/200ml)",
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+            DropdownMenuItem(
+              value: "ココア",
+              child: Text(
+                "ココア (5mg/200ml)",
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
               ),
             ),
@@ -360,6 +448,7 @@ class _MeunState extends State<Meun> {
   }
 }
 
+// DrinkButton、TimeButton、RecoedButtonクラスは既存のまま維持
 class DrinkButton extends StatefulWidget {
   final Function(int) onAmountChanged;
 
@@ -376,7 +465,7 @@ class _DrinkButtonState extends State<DrinkButton> {
   @override
   void initState() {
     super.initState();
-    // 初期選択を350mlに設定
+    // 初期選択を200mlに設定
     selectedIndex = 0;
   }
 
@@ -442,21 +531,17 @@ class _DrinkButtonState extends State<DrinkButton> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // 1杯 200ml
         drinkCupButton(
           0,
-          "0.5杯",
-          "assets/drink_coffee_cup01_espresso.png",
-          "350ml",
-          350,
-        ),
-        drinkCupButton(
-          1,
           "1杯",
           "assets/drink_coffee_cup07_american.png",
-          "500ml",
-          500,
+          "200ml",
+          200,
         ),
-        // 画像を2つ表示するボタン
+        // 1缶 350ml
+        drinkCupButton(1, "1缶", "assets/can_coffee.png", "350ml", 350),
+        // ペットボトル1本 500ml
         Stack(
           alignment: Alignment.center,
           children: [
@@ -477,24 +562,18 @@ class _DrinkButtonState extends State<DrinkButton> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("2杯"),
+                  Text("1本"),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        "assets/drink_coffee_cup07_american.png",
-                        width: 40,
-                        height: 50,
-                      ),
-                      SizedBox(width: 5),
-                      Image.asset(
-                        "assets/drink_coffee_cup07_american.png",
+                        "assets/petbottle_water_full.png", // パスを修正
                         width: 40,
                         height: 50,
                       ),
                     ],
                   ),
-                  Text("1L"),
+                  Text("500ml"),
                 ],
               ),
             ),
@@ -509,7 +588,7 @@ class _DrinkButtonState extends State<DrinkButton> {
                     setState(() {
                       selectedIndex = 2;
                     });
-                    widget.onAmountChanged(1000);
+                    widget.onAmountChanged(500); // 500mlに修正
                   },
                   splashColor: Colors.blue.withOpacity(0.1),
                   highlightColor: Colors.transparent,
@@ -543,6 +622,7 @@ class TimeButton extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        // 就寝時間ボタン
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
@@ -617,6 +697,8 @@ class TimeButton extends StatelessWidget {
             ],
           ),
         ),
+
+        // 起床時間ボタン（修正版）
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(

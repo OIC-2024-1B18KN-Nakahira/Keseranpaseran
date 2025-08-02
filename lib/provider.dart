@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'services/realtime_service.dart';
+import 'realtime_service.dart';
 
 final ageProvider = StateProvider<int>((ref) => 0);
 final pregnantProvider = StateProvider<bool>((ref) => false);
