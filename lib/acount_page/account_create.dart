@@ -183,7 +183,6 @@ class _FormState extends ConsumerState<Form> {
   Widget build(BuildContext context) {
     // デバッグ用：現在のproviderの値を取得
     final currentAge = ref.watch(ageProvider);
-    final currentPregnant = ref.watch(pregnantProvider);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

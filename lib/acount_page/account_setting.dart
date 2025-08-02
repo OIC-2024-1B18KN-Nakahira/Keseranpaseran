@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keseranpaseran/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AccountCreate2 extends StatelessWidget {
   const AccountCreate2({super.key});
@@ -228,7 +227,7 @@ class BackLoginButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () => context.push('/account_create'),
+      onPressed: () => context.go('/login'),
       child: Text(
         "ログイン画面はこちら",
         style: TextStyle(

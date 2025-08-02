@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:keseranpaseran/services/realtime_service.dart';
+import 'package:keseranpaseran/realtime_service.dart';
 
 /* --------------------------------------------------
  * 履歴画面  ― 睡眠時間 ＆ カフェイン摂取量
