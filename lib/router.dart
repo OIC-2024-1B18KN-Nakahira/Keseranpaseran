@@ -29,7 +29,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      routerConfig: _createRouter(ref),
+      routerConfig: createRouter(ref),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color.fromARGB(255, 239, 239, 239),
@@ -43,14 +43,22 @@ class MyApp extends ConsumerWidget {
     );
   }
 
-  GoRouter _createRouter(WidgetRef ref) {
+  GoRouter createRouter(WidgetRef ref) {
+    return _createRouterCore(ref.read);
+  }
+
+  GoRouter createRouterForProvider(ProviderRef ref) {
+    return _createRouterCore(ref.read);
+  }
+
+  GoRouter _createRouterCore(T Function<T>(ProviderBase<T> provider) read) {
     return GoRouter(
       initialLocation: '/login',
       navigatorKey: rootNavigatorKey,
       // リダイレクト機能を追加
       redirect: (BuildContext context, GoRouterState state) {
         // 認証状態を確認
-        final isAuthenticated = ref.read(isAuthenticatedProvider);
+        final isAuthenticated = read(isAuthenticatedProvider);
         final isLoggingIn = state.uri.toString() == '/login';
         final isCreatingAccount = state.uri.toString().startsWith(
           '/account_create',

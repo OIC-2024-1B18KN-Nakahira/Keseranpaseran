@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'realtime_service.dart';
+import 'router.dart' as router_lib;
 
 final ageProvider = StateProvider<int>((ref) => 0);
 final pregnantProvider = StateProvider<bool>((ref) => false);
@@ -41,4 +43,16 @@ final dataUpdateNotifierProvider = StateProvider<int>((ref) => 0);
 // データ更新を通知する関数
 void notifyDataUpdate(WidgetRef ref) {
   ref.read(dataUpdateNotifierProvider.notifier).state++;
+}
+
+// GoRouterのProvider - router.dartから直接作成
+final routerProvider = Provider<GoRouter>((ref) {
+  return createRouterWithRef(ref);
+});
+
+// router.dartで使うための関数
+GoRouter createRouterWithRef(ProviderRef<GoRouter> ref) {
+  final app = router_lib.MyApp();
+  // ProviderRefをWidgetRefのように扱う
+  return app.createRouterForProvider(ref);
 }
