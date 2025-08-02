@@ -85,23 +85,3 @@ Future<void> _recordAppOpen() async {
   await prefs.setString('last_opened', DateTime.now().toIso8601String());
 }
 
-// MyAppクラスを追加
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'KeseranPaseran',
-      routerConfig: router,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 239, 239, 239),
-        ),
-        primaryIconTheme: const IconThemeData(color: Colors.black),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          toolbarHeight: 80,
-        ),
-      ),
-    );
-  }
-}
