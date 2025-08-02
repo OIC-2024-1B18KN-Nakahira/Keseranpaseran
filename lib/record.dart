@@ -19,6 +19,19 @@ class _RecordState extends State<Record> {
   TimeOfDay? bedtime;
   TimeOfDay? wakeTime;
 
+  // 入力をリセットする関数
+  void resetInputs() {
+    setState(() {
+      selectedDateTime = DateTime.now();
+      selectedDrink = "コーヒー";
+      selectedAmount = 350;
+      bedtime = null;
+      wakeTime = null;
+      // グローバル変数もリセット
+      selecteDrink = "コーヒー";
+    });
+  }
+
   // データを保存する関数
   Future<void> saveRecord() async {
     try {
@@ -74,6 +87,9 @@ class _RecordState extends State<Record> {
           'sleep_duration_minutes': duration.inMinutes,
         });
       }
+
+      // 保存成功後にリセット
+      resetInputs();
 
       ScaffoldMessenger.of(
         context,
@@ -157,6 +173,7 @@ class _RecordState extends State<Record> {
               ),
               Text("飲み物の種類", style: TextStyle(fontWeight: FontWeight.bold)),
               Meun(
+                key: ValueKey(selectedDrink), // キーを追加してリビルドを強制
                 onDrinkChanged: (drink) {
                   setState(() {
                     selectedDrink = drink;
@@ -185,6 +202,7 @@ class _RecordState extends State<Record> {
                       vertical: 10,
                     ),
                     child: DrinkButton(
+                      key: ValueKey(selectedAmount), // キーを追加してリビルドを強制
                       onAmountChanged: (amount) {
                         setState(() {
                           selectedAmount = amount;
@@ -354,6 +372,13 @@ class DrinkButton extends StatefulWidget {
 
 class _DrinkButtonState extends State<DrinkButton> {
   int selectedIndex = -1; // 選択されたボタンのインデックス
+
+  @override
+  void initState() {
+    super.initState();
+    // 初期選択を350mlに設定
+    selectedIndex = 0;
+  }
 
   Widget drinkCupButton(
     int index,
