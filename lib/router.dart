@@ -17,12 +17,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'record.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> calendarNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> calendarNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> todoNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> homeNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> accountNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> accountNavigatorKey = GlobalKey<NavigatorState>();
 
 class MyApp extends ConsumerWidget {
   MyApp({super.key});
