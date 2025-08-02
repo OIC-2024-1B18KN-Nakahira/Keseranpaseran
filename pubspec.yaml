@@ -76,6 +76,9 @@ flutter:
     - assets/badStatus.png
     - assets/goodStatus.png
     - assets/deadStatus.png
+    - assets/can_coffee.png
+    - assets/petbottle_water_full.png
+
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
