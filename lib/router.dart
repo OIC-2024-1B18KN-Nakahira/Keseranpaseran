@@ -9,7 +9,6 @@ import 'package:keseranpaseran/setting_page/6.dart';
 import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
 import 'package:keseranpaseran/setting_page/6_change_email.dart';
 import 'package:keseranpaseran/setting_page/6_email_sent.dart';
-import 'package:keseranpaseran/setting_page/6_search.dart';
 import 'package:keseranpaseran/history.dart';
 import 'package:keseranpaseran/home.dart';
 import 'package:keseranpaseran/provider.dart';
@@ -27,6 +26,93 @@ final GlobalKey<NavigatorState> accountNavigatorKey =
 class MyApp extends ConsumerWidget {
   MyApp({super.key});
 
+  final router = GoRouter(
+    initialLocation: '/login',
+    navigatorKey: rootNavigatorKey,
+    routes: [
+      StatefulShellRoute.indexedStack(
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state, navigationShell) {
+          return AppNavigationBar(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: calendarNavigatorKey,
+            routes: [
+              GoRoute(path: '/home', builder: (context, state) => const Home()),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: todoNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/record',
+                builder: (context, state) => const Record(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: homeNavigatorKey,
+            routes: [
+              GoRoute(
+                path: '/history',
+                builder: (context, state) => const History(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: accountNavigatorKey,
+            routes: [
+              /// 6  (ルート画面)
+              GoRoute(
+                path: '/account',
+                name: 'account', // ← name を付けておくと便利
+                builder: (context, state) => const Account(),
+                routes: [
+                  /// 6.1
+                  GoRoute(
+                    path: 'edit', // => /account/edit
+                    name: 'editProfile',
+                    builder: (context, state) => const EditProfilePage(),
+                  ),
+
+                  /// 6.2
+                  GoRoute(
+                    path: 'change-email', // => /account/change-email
+                    name: 'changeEmail',
+                    builder: (context, state) => const ChangeEmailPage(),
+                  ),
+
+                  /// 6.3 (完了ダイアログ画面)
+                  GoRoute(
+                    path: 'email-sent', // => /account/email-sent
+                    name: 'emailSent',
+                    builder: (context, state) => const EmailSentPage(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: '/account_create',
+        name: 'accountCreate',
+        builder: (context, state) => const AccountCreate(),
+      ),
+      GoRoute(
+        path: '/account_create2',
+        name: 'accountCreate2',
+        builder: (context, state) => const AccountCreate2(),
+      ),
+    ],
+  );
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
