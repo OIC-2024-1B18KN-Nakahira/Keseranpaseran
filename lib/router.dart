@@ -8,7 +8,6 @@ import 'package:keseranpaseran/setting_page/6.dart';
 import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
 import 'package:keseranpaseran/setting_page/6_change_email.dart';
 import 'package:keseranpaseran/setting_page/6_email_sent.dart';
-import 'package:keseranpaseran/setting_page/6_search.dart';
 import 'package:keseranpaseran/history.dart';
 import 'package:keseranpaseran/home.dart';
 import 'record.dart';
@@ -86,13 +85,6 @@ class MyApp extends StatelessWidget {
                     path: 'email-sent', // => /account/email-sent
                     name: 'emailSent',
                     builder: (context, state) => const EmailSentPage(),
-                  ),
-
-                  /// 6.4
-                  GoRoute(
-                    path: 'search', // => /account/search
-                    name: 'accountSearch',
-                    builder: (context, state) => const AccountSearchPage(),
                   ),
                 ],
               ),
