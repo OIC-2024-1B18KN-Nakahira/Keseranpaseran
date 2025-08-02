@@ -36,6 +36,8 @@ dependencies:
   permission_handler: ^11.0.1
   flutter_local_notifications: ^17.2.2
   shared_preferences: ^2.2.2 
+  flutter_riverpod: ^2.6.1
+
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -69,7 +71,9 @@ flutter:
     - assets/coffee01_blend.png
     - assets/drink_coffee_cup01_espresso.png
     - assets/drink_coffee_cup07_american.png
-    - assets\raw.png
+    - assets/badStatus.png
+    - assets/goodStatus.png
+    - assets/deadStatus.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
