@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keseranpaseran/provider.dart';
+import 'package:keseranpaseran/services/realtime_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:keseranpaseran/realtime_service.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -27,14 +31,14 @@ class Calendar extends StatelessWidget {
   }
 }
 
-class AppTitle extends StatefulWidget {
+class AppTitle extends ConsumerStatefulWidget {
   const AppTitle({super.key});
 
   @override
-  State<AppTitle> createState() => _AppTitleState();
+  ConsumerState<AppTitle> createState() => _AppTitleState();
 }
 
-class _AppTitleState extends State<AppTitle> {
+class _AppTitleState extends ConsumerState<AppTitle> {
   int todayCaffeine = 0;
   String todaySleep = "0時間";
   bool isLoading = true;
@@ -42,7 +46,25 @@ class _AppTitleState extends State<AppTitle> {
   @override
   void initState() {
     super.initState();
+    // リアルタイムコールバックを設定
+    RealtimeService.setCaffeineCallback(_onDataChanged);
+    RealtimeService.setSleepCallback(_onDataChanged);
+
     _loadTodayData();
+  }
+
+  // データ変更時のコールバック
+  void _onDataChanged(Map<String, dynamic> payload) {
+    print('AppTitle: データが変更されました');
+    _loadTodayData(); // データを再読み込み
+  }
+
+  @override
+  void dispose() {
+    // コールバックをクリア
+    RealtimeService.setCaffeineCallback((_) {});
+    RealtimeService.setSleepCallback((_) {});
+    super.dispose();
   }
 
   Future<void> _loadTodayData() async {
@@ -70,11 +92,9 @@ class _AppTitleState extends State<AppTitle> {
             '${DateTime(today.year, today.month, today.day + 1).toIso8601String().substring(0, 10)}T00:00:00.000Z',
           );
 
-      // カフェイン摂取量を合計（mlをmgに変換）
       int totalCaffeine = 0;
       for (final record in caffeineResponse) {
         final amountMl = record['amount_ml'] as int? ?? 0;
-        // 1mlあたり0.4mgのカフェインと仮定
         totalCaffeine += (amountMl * 0.4).round();
       }
 
@@ -87,14 +107,12 @@ class _AppTitleState extends State<AppTitle> {
 
       String sleepTime = "0時間";
       if (sleepResponse.isNotEmpty) {
-        // すべての睡眠記録を合計
         int totalSleepMinutes = 0;
         for (final record in sleepResponse) {
           final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
           totalSleepMinutes += sleepMinutes;
         }
 
-        // 分を時間と分に変換
         final hours = totalSleepMinutes ~/ 60;
         final minutes = totalSleepMinutes % 60;
 
@@ -107,9 +125,6 @@ class _AppTitleState extends State<AppTitle> {
         } else {
           sleepTime = "0時間";
         }
-
-        print('今日の睡眠記録数: ${sleepResponse.length}');
-        print('合計睡眠時間: ${totalSleepMinutes}分 (${sleepTime})');
       }
 
       setState(() {
@@ -117,6 +132,9 @@ class _AppTitleState extends State<AppTitle> {
         todaySleep = sleepTime;
         isLoading = false;
       });
+
+      // データ更新を通知
+      notifyDataUpdate(ref);
     } catch (error) {
       print('データ取得エラー: $error');
       setState(() {
@@ -127,6 +145,9 @@ class _AppTitleState extends State<AppTitle> {
 
   @override
   Widget build(BuildContext context) {
+    // データ更新通知を監視
+    ref.watch(dataUpdateNotifierProvider);
+
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: Row(
