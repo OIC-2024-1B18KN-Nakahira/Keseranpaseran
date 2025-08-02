@@ -14,110 +14,99 @@ import 'package:keseranpaseran/home.dart';
 import 'record.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> calendarNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> calendarNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> todoNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> homeNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> accountNavigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> accountNavigatorKey = GlobalKey<NavigatorState>();
+
+// routerをグローバルに定義
+final GoRouter router = GoRouter(
+  initialLocation: '/login',
+  navigatorKey: rootNavigatorKey,
+  routes: [
+    StatefulShellRoute.indexedStack(
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state, navigationShell) {
+        return AppNavigationBar(navigationShell: navigationShell);
+      },
+      branches: [
+        StatefulShellBranch(
+          navigatorKey: calendarNavigatorKey,
+          routes: [
+            GoRoute(path: '/home', builder: (context, state) => const Home()),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: todoNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/record',
+              builder: (context, state) => const Record(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: homeNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/history',
+              builder: (context, state) => const History(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          navigatorKey: accountNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/account',
+              name: 'account',
+              builder: (context, state) => const Account(),
+              routes: [
+                GoRoute(
+                  path: 'edit',
+                  name: 'editProfile',
+                  builder: (context, state) => const EditProfilePage(),
+                ),
+                GoRoute(
+                  path: 'change-email',
+                  name: 'changeEmail',
+                  builder: (context, state) => const ChangeEmailPage(),
+                ),
+                GoRoute(
+                  path: 'email-sent',
+                  name: 'emailSent',
+                  builder: (context, state) => const EmailSentPage(),
+                ),
+                GoRoute(
+                  path: 'search',
+                  name: 'accountSearch',
+                  builder: (context, state) => const AccountSearchPage(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/login',
+      name: 'login',
+      builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/account_create',
+      name: 'accountCreate',
+      builder: (context, state) => const AccountCreate(),
+    ),
+    GoRoute(
+      path: '/account_create2',
+      name: 'accountCreate2',
+      builder: (context, state) => const AccountCreate2(),
+    ),
+  ],
+);
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key});
-
-  final router = GoRouter(
-    initialLocation: '/login',
-    navigatorKey: rootNavigatorKey,
-    routes: [
-      StatefulShellRoute.indexedStack(
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state, navigationShell) {
-          return AppNavigationBar(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            navigatorKey: calendarNavigatorKey,
-            routes: [
-              GoRoute(path: '/home', builder: (context, state) => const Home()),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: todoNavigatorKey,
-            routes: [
-              GoRoute(
-                path: '/record',
-                builder: (context, state) => const Record(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: homeNavigatorKey,
-            routes: [
-              GoRoute(
-                path: '/history',
-                builder: (context, state) => const History(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: accountNavigatorKey,
-            routes: [
-              /// 6  (ルート画面)
-              GoRoute(
-                path: '/account',
-                name: 'account', // ← name を付けておくと便利
-                builder: (context, state) => const Account(),
-                routes: [
-                  /// 6.1
-                  GoRoute(
-                    path: 'edit', // => /account/edit
-                    name: 'editProfile',
-                    builder: (context, state) => const EditProfilePage(),
-                  ),
-
-                  /// 6.2
-                  GoRoute(
-                    path: 'change-email', // => /account/change-email
-                    name: 'changeEmail',
-                    builder: (context, state) => const ChangeEmailPage(),
-                  ),
-
-                  /// 6.3 (完了ダイアログ画面)
-                  GoRoute(
-                    path: 'email-sent', // => /account/email-sent
-                    name: 'emailSent',
-                    builder: (context, state) => const EmailSentPage(),
-                  ),
-
-                  /// 6.4
-                  GoRoute(
-                    path: 'search', // => /account/search
-                    name: 'accountSearch',
-                    builder: (context, state) => const AccountSearchPage(),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => const LoginPage(),
-      ),
-      GoRoute(
-        path: '/account_create',
-        name: 'accountCreate',
-        builder: (context, state) => const AccountCreate(),
-      ),
-      GoRoute(
-        path: '/account_create2',
-        name: 'accountCreate2',
-        builder: (context, state) => const AccountCreate2(),
-      ),
-    ],
-  );
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
@@ -148,7 +137,7 @@ class AppNavigationBar extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: (index) {
-          navigationShell.goBranch(index); // インデックスに基づいて画面を切り替える
+          navigationShell.goBranch(index);
         },
         destinations: [
           NavigationDestination(
