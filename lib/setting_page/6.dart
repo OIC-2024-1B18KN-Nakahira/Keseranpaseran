@@ -28,11 +28,6 @@ class Account extends StatelessWidget {
             title: 'メールアドレス変更',
             onTap: () => context.pushNamed('changeEmail'),
           ),
-          _item(
-            context,
-            title: 'ユーザー検索',
-            onTap: () => context.pushNamed('accountSearch'),
-          ),
           const Divider(height: 32),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: Colors.red),
