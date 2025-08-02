@@ -78,7 +78,7 @@ class _AppTitleState extends State<AppTitle> {
         totalCaffeine += (amountMl * 0.4).round();
       }
 
-      // 今日の睡眠時間を取得
+      // 今日の睡眠時間を取得（すべての記録を合計）
       final sleepResponse = await supabase
           .from('sleep_records')
           .select('sleep_duration_minutes')
@@ -87,11 +87,29 @@ class _AppTitleState extends State<AppTitle> {
 
       String sleepTime = "0時間";
       if (sleepResponse.isNotEmpty) {
-        final sleepMinutes =
-            sleepResponse.first['sleep_duration_minutes'] as int? ?? 0;
-        final hours = sleepMinutes ~/ 60;
-        final minutes = sleepMinutes % 60;
-        sleepTime = minutes > 0 ? "${hours}時間${minutes}分" : "${hours}時間";
+        // すべての睡眠記録を合計
+        int totalSleepMinutes = 0;
+        for (final record in sleepResponse) {
+          final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
+          totalSleepMinutes += sleepMinutes;
+        }
+
+        // 分を時間と分に変換
+        final hours = totalSleepMinutes ~/ 60;
+        final minutes = totalSleepMinutes % 60;
+
+        if (hours > 0 && minutes > 0) {
+          sleepTime = "${hours}時間${minutes}分";
+        } else if (hours > 0) {
+          sleepTime = "${hours}時間";
+        } else if (minutes > 0) {
+          sleepTime = "${minutes}分";
+        } else {
+          sleepTime = "0時間";
+        }
+
+        print('今日の睡眠記録数: ${sleepResponse.length}');
+        print('合計睡眠時間: ${totalSleepMinutes}分 (${sleepTime})');
       }
 
       setState(() {

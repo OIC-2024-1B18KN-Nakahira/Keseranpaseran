@@ -44,16 +44,6 @@ class _HomeState extends State<Home> {
 
       print('Current User ID: ${currentUser.id}');
 
-      // usersテーブルからユーザー情報を取得
-      final userResponse =
-          await supabase
-              .from('users')
-              .select('*')
-              .eq('id', currentUser.id)
-              .single();
-
-      print('User data: $userResponse');
-
       // 今日の日付を取得
       final today = DateTime.now();
       final todayString =
@@ -61,55 +51,68 @@ class _HomeState extends State<Home> {
 
       print('Today: $todayString');
 
-      // 今日のカフェイン摂取量を取得（caffeine_recordsテーブルがある場合）
+      // 今日のカフェイン摂取量を取得
       try {
         final caffeineResponse = await supabase
             .from('caffeine_records')
-            .select('amount')
+            .select('amount_ml')
             .eq('user_id', currentUser.id)
-            .gte('recorded_at', '${todayString} 00:00:00')
-            .lt('recorded_at', '${todayString} 23:59:59');
+            .gte('recorded_at', '${todayString}T00:00:00.000Z')
+            .lt(
+              'recorded_at',
+              '${DateTime(today.year, today.month, today.day + 1).toIso8601String().substring(0, 10)}T00:00:00.000Z',
+            );
 
         print('Caffeine records: $caffeineResponse');
 
-        // 今日のカフェイン摂取量を合計
-        double totalCaffeine = 0.0;
-        for (var record in caffeineResponse) {
-          totalCaffeine += (record['amount'] as num).toDouble();
+        // 今日のカフェイン摂取量を合計（mlをmgに変換）
+        int totalCaffeine = 0;
+        for (final record in caffeineResponse) {
+          final amountMl = record['amount_ml'] as int? ?? 0;
+          // 1mlあたり0.4mgのカフェインと仮定
+          totalCaffeine += (amountMl * 0.4).round();
         }
 
         print('Total caffeine today: $totalCaffeine mg');
 
         setState(() {
-          caffeineIntake = totalCaffeine;
+          caffeineIntake = totalCaffeine.toDouble();
         });
       } catch (caffeineError) {
         print('カフェインデータ取得エラー: $caffeineError');
-        // テーブルが存在しない場合はテストデータを使用
         setState(() {
           caffeineIntake = 450.0; // テスト用
         });
       }
 
-      // 今日の睡眠時間を取得（sleep_recordsテーブルがある場合）
+      // 今日の睡眠時間を取得（すべての記録を合計）
       try {
         final sleepResponse = await supabase
             .from('sleep_records')
-            .select('hours')
+            .select('sleep_duration_minutes')
             .eq('user_id', currentUser.id)
-            .gte('recorded_at', '${todayString} 00:00:00')
-            .lt('recorded_at', '${todayString} 23:59:59')
-            .order('recorded_at', ascending: false)
-            .limit(1);
+            .eq('record_date', todayString);
 
         print('Sleep records: $sleepResponse');
 
         if (sleepResponse.isNotEmpty) {
-          final sleepHours = (sleepResponse[0]['hours'] as num).toDouble();
-          print('Sleep hours today: $sleepHours hours');
+          // 今日のすべての睡眠記録を合計（分単位）
+          int totalSleepMinutes = 0;
+          for (var record in sleepResponse) {
+            final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
+            totalSleepMinutes += sleepMinutes;
+            print('Sleep record: ${sleepMinutes}分');
+          }
+
+          // 分を時間に変換
+          double totalSleepHours = totalSleepMinutes / 60.0;
+
+          print('Total sleep minutes today: ${totalSleepMinutes}分');
+          print('Total sleep hours today: ${totalSleepHours}時間');
+          print('Sleep records count: ${sleepResponse.length}件');
 
           setState(() {
-            this.sleepHours = sleepHours;
+            sleepHours = totalSleepHours;
           });
         } else {
           print('今日の睡眠記録がありません');
@@ -119,7 +122,6 @@ class _HomeState extends State<Home> {
         }
       } catch (sleepError) {
         print('睡眠データ取得エラー: $sleepError');
-        // テーブルが存在しない場合はテストデータを使用
         setState(() {
           sleepHours = 6.0; // テスト用（7時間未満）
         });
@@ -128,18 +130,31 @@ class _HomeState extends State<Home> {
       print('=== 最終データ ===');
       print('Caffeine Intake: $caffeineIntake mg');
       print('Sleep Hours: $sleepHours hours');
-      print('Bad Status: ${isBadHealthStatus()}');
-      print('Image Path: ${getStatusImagePath()}');
+
+      // 健康状態のデバッグ
+      debugHealthStatus();
     } catch (error) {
       print('=== データ取得エラー ===');
       print('Error: $error');
 
       // エラー時はテストデータを使用
       setState(() {
-        caffeineIntake = 450.0; // badStatus.pngが表示されるテストデータ
-        sleepHours = 6.0; // badStatus.pngが表示されるテストデータ
+        caffeineIntake = 450.0;
+        sleepHours = 6.0;
       });
     }
+  }
+
+  // 健康状態をデバッグ出力する関数
+  void debugHealthStatus() {
+    print('=== 健康状態デバッグ ===');
+    print('Has required data: ${hasRequiredData()}');
+    print('Is bad health status: ${isBadHealthStatus()}');
+    print('Is dead health status: ${isDeadHealthStatus()}');
+    print('Status message: ${getStatusMessage()}');
+    print('Status text: ${getStatusText()}');
+    print('Background color: ${getBackgroundColor()}');
+    print('Image path: ${getStatusImagePath()}');
   }
 
   // データが存在するかチェックする関数
@@ -153,9 +168,16 @@ class _HomeState extends State<Home> {
       return false; // データがない場合は悪い状態ではない
     }
 
-    // カフェイン摂取量が400mg以上 または 睡眠時間が7時間未満（どちらか一方）
-    return (caffeineIntake! >= 400.0 && sleepHours! >= 7.0) ||
-        (caffeineIntake! < 400.0 && sleepHours! < 7.0);
+    final isCaffeineExcessive = caffeineIntake! >= 400.0;
+    final isSleepInsufficient = sleepHours! < 7.0;
+
+    // Dead Status（両方が悪い）の場合は Bad Status ではない
+    if (isDeadHealthStatus()) {
+      return false;
+    }
+
+    // どちらか一方だけが悪い場合のみ Bad Status
+    return isCaffeineExcessive || isSleepInsufficient;
   }
 
   // 健康状態が非常に悪いかどうかを判定する関数（新規追加）
@@ -164,7 +186,7 @@ class _HomeState extends State<Home> {
       return false; // データがない場合は悪い状態ではない
     }
 
-    // カフェイン摂取量が400mg以上 かつ 睡眠時間が7時間未満（両方）
+    // カフェイン過剰（400mg以上）かつ睡眠不足（7時間未満）
     return caffeineIntake! >= 400.0 && sleepHours! < 7.0;
   }
 
