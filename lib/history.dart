@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:keseranpaseran/services/realtime_service.dart';
 
 /* --------------------------------------------------
  * 履歴画面  ― 睡眠時間 ＆ カフェイン摂取量
@@ -29,6 +30,10 @@ class _HistoryState extends State<History> {
   @override
   void initState() {
     super.initState();
+    // リアルタイムコールバックを設定
+    RealtimeService.setCaffeineCallback(_onDataChanged);
+    RealtimeService.setSleepCallback(_onDataChanged);
+
     _loadData();
   }
 
@@ -417,6 +422,20 @@ class _HistoryState extends State<History> {
         ),
       ],
     );
+  }
+
+  // データ変更時のコールバック
+  void _onDataChanged(Map<String, dynamic> payload) {
+    print('History: データが変更されました');
+    _loadData(); // データを再読み込み
+  }
+
+  @override
+  void dispose() {
+    // コールバックをクリア
+    RealtimeService.setCaffeineCallback((_) {});
+    RealtimeService.setSleepCallback((_) {});
+    super.dispose();
   }
 }
 
