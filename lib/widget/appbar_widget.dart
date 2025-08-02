@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keseranpaseran/provider.dart';
-import 'package:keseranpaseran/services/realtime_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:keseranpaseran/realtime_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -67,6 +66,30 @@ class _AppTitleState extends ConsumerState<AppTitle> {
     super.dispose();
   }
 
+  // カフェイン計算関数を追加（home.dartと同じ）
+  double calculateCaffeineFromRecord(String drinkType, int amountMl) {
+    switch (drinkType) {
+      case "コーラ":
+        return (amountMl / 350.0) * 40.0;
+      case "コーヒー":
+      case "紅茶":
+        return (amountMl / 200.0) * 60.0;
+      case "栄養ドリンク":
+      case "エナジードリンク":
+        return (amountMl / 100.0) * 150.0;
+      case "緑茶":
+        return (amountMl / 200.0) * 20.0;
+      case "ウーロン茶":
+        return (amountMl / 200.0) * 20.0;
+      case "ココア":
+        return (amountMl / 200.0) * 5.0;
+      case "その他":
+        return (amountMl / 200.0) * 60.0;
+      default:
+        return 0.0;
+    }
+  }
+
   Future<void> _loadTodayData() async {
     try {
       final user = supabase.auth.currentUser;
@@ -81,10 +104,10 @@ class _AppTitleState extends ConsumerState<AppTitle> {
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-      // 今日のカフェイン摂取量を取得
+      // 今日のカフェイン摂取量を取得（修正版）
       final caffeineResponse = await supabase
           .from('caffeine_records')
-          .select('amount_ml')
+          .select('amount_ml, drink_type') // drink_typeも取得
           .eq('user_id', user.id)
           .gte('recorded_at', '${todayString}T00:00:00.000Z')
           .lt(
@@ -92,10 +115,13 @@ class _AppTitleState extends ConsumerState<AppTitle> {
             '${DateTime(today.year, today.month, today.day + 1).toIso8601String().substring(0, 10)}T00:00:00.000Z',
           );
 
-      int totalCaffeine = 0;
+      double totalCaffeine = 0.0;
       for (final record in caffeineResponse) {
         final amountMl = record['amount_ml'] as int? ?? 0;
-        totalCaffeine += (amountMl * 0.4).round();
+        final drinkType = record['drink_type'] as String? ?? 'コーヒー';
+
+        // 飲み物の種類に応じて正確なカフェイン量を計算
+        totalCaffeine += calculateCaffeineFromRecord(drinkType, amountMl);
       }
 
       // 今日の睡眠時間を取得（すべての記録を合計）
@@ -128,7 +154,7 @@ class _AppTitleState extends ConsumerState<AppTitle> {
       }
 
       setState(() {
-        todayCaffeine = totalCaffeine;
+        todayCaffeine = totalCaffeine.round();
         todaySleep = sleepTime;
         isLoading = false;
       });
