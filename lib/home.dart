@@ -1,29 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keseranpaseran/widget/appbar_widget.dart';
+import 'package:keseranpaseran/provider.dart';
+import 'package:keseranpaseran/services/realtime_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Supabaseクライアントを取得
 final supabase = Supabase.instance.client;
 
-class Home extends StatefulWidget {
+class Home extends ConsumerStatefulWidget {
   const Home({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  ConsumerState<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
-  // カフェイン摂取量のデータ（mg）
+class _HomeState extends ConsumerState<Home> {
   double? caffeineIntake;
-
-  // 睡眠時間のデータ（時間）
   double? sleepHours;
 
   @override
   void initState() {
     super.initState();
-    // 実際のデータ取得処理をここに記述
+    // リアルタイムコールバックを設定
+    RealtimeService.setCaffeineCallback(_onCaffeineDataChanged);
+    RealtimeService.setSleepCallback(_onSleepDataChanged);
+
+    // 初期データ読み込み
     loadUserData();
+  }
+
+  // カフェインデータ変更時のコールバック
+  void _onCaffeineDataChanged(Map<String, dynamic> payload) {
+    print('Home: カフェインデータが変更されました');
+    loadUserData(); // データを再読み込み
+  }
+
+  // 睡眠データ変更時のコールバック
+  void _onSleepDataChanged(Map<String, dynamic> payload) {
+    print('Home: 睡眠データが変更されました');
+    loadUserData(); // データを再読み込み
+  }
+
+  @override
+  void dispose() {
+    // コールバックをクリア
+    RealtimeService.setCaffeineCallback((_) {});
+    RealtimeService.setSleepCallback((_) {});
+    super.dispose();
   }
 
   // ユーザーデータを読み込む関数
@@ -31,7 +54,6 @@ class _HomeState extends State<Home> {
     try {
       print('=== ユーザーデータ取得開始 ===');
 
-      // 現在ログイン中のユーザーIDを取得
       final currentUser = supabase.auth.currentUser;
       if (currentUser == null) {
         print('ユーザーがログインしていません');
@@ -42,14 +64,9 @@ class _HomeState extends State<Home> {
         return;
       }
 
-      print('Current User ID: ${currentUser.id}');
-
-      // 今日の日付を取得
       final today = DateTime.now();
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-
-      print('Today: $todayString');
 
       // 今日のカフェイン摂取量を取得
       try {
@@ -63,17 +80,11 @@ class _HomeState extends State<Home> {
               '${DateTime(today.year, today.month, today.day + 1).toIso8601String().substring(0, 10)}T00:00:00.000Z',
             );
 
-        print('Caffeine records: $caffeineResponse');
-
-        // 今日のカフェイン摂取量を合計（mlをmgに変換）
         int totalCaffeine = 0;
         for (final record in caffeineResponse) {
           final amountMl = record['amount_ml'] as int? ?? 0;
-          // 1mlあたり0.4mgのカフェインと仮定
           totalCaffeine += (amountMl * 0.4).round();
         }
-
-        print('Total caffeine today: $totalCaffeine mg');
 
         setState(() {
           caffeineIntake = totalCaffeine.toDouble();
@@ -81,7 +92,7 @@ class _HomeState extends State<Home> {
       } catch (caffeineError) {
         print('カフェインデータ取得エラー: $caffeineError');
         setState(() {
-          caffeineIntake = 450.0; // テスト用
+          caffeineIntake = 0.0;
         });
       }
 
@@ -93,29 +104,19 @@ class _HomeState extends State<Home> {
             .eq('user_id', currentUser.id)
             .eq('record_date', todayString);
 
-        print('Sleep records: $sleepResponse');
-
         if (sleepResponse.isNotEmpty) {
-          // 今日のすべての睡眠記録を合計（分単位）
           int totalSleepMinutes = 0;
           for (var record in sleepResponse) {
             final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
             totalSleepMinutes += sleepMinutes;
-            print('Sleep record: ${sleepMinutes}分');
           }
 
-          // 分を時間に変換
           double totalSleepHours = totalSleepMinutes / 60.0;
-
-          print('Total sleep minutes today: ${totalSleepMinutes}分');
-          print('Total sleep hours today: ${totalSleepHours}時間');
-          print('Sleep records count: ${sleepResponse.length}件');
 
           setState(() {
             sleepHours = totalSleepHours;
           });
         } else {
-          print('今日の睡眠記録がありません');
           setState(() {
             sleepHours = null;
           });
@@ -123,24 +124,17 @@ class _HomeState extends State<Home> {
       } catch (sleepError) {
         print('睡眠データ取得エラー: $sleepError');
         setState(() {
-          sleepHours = 6.0; // テスト用（7時間未満）
+          sleepHours = 0.0;
         });
       }
 
-      print('=== 最終データ ===');
-      print('Caffeine Intake: $caffeineIntake mg');
-      print('Sleep Hours: $sleepHours hours');
-
-      // 健康状態のデバッグ
-      debugHealthStatus();
+      // データ更新を他の画面に通知
+      notifyDataUpdate(ref);
     } catch (error) {
-      print('=== データ取得エラー ===');
-      print('Error: $error');
-
-      // エラー時はテストデータを使用
+      print('データ取得エラー: $error');
       setState(() {
-        caffeineIntake = 450.0;
-        sleepHours = 6.0;
+        caffeineIntake = 0.0;
+        sleepHours = 0.0;
       });
     }
   }
@@ -280,23 +274,24 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    // データ更新通知を監視
+    ref.watch(dataUpdateNotifierProvider);
+
     return Scaffold(
       appBar: AppBar(title: Calendar(), actions: [AppTitle()]),
-      backgroundColor: getBackgroundColor(), // 背景色を健康状態に応じて変更
+      backgroundColor: getBackgroundColor(),
       body: Column(
         children: [
-          //上部の余白
           SizedBox(height: 24),
-          //画像を表示（データの有無と健康状態に応じて切り替え）
           Center(
             child: Image.asset(
               getStatusImagePath(),
-              width: 220, // 必要に応じて調整
+              width: 220,
               height: 220,
               fit: BoxFit.contain,
             ),
           ),
-          SizedBox(height: 16), //ケセランパセララベル
+          SizedBox(height: 16),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
@@ -308,11 +303,11 @@ class _HomeState extends State<Home> {
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 255, 255, 255),
+                color: Colors.white,
               ),
             ),
           ),
-          SizedBox(height: 8), //下部の余白
+          SizedBox(height: 8),
           Container(
             margin: EdgeInsets.symmetric(horizontal: 24),
             padding: EdgeInsets.all(16),
@@ -334,12 +329,10 @@ class _HomeState extends State<Home> {
             ),
           ),
           SizedBox(height: 16),
-          // 下部の2つのカード
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                // 状態カード
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(12),
@@ -370,13 +363,12 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                 ),
-                // 最大摂取量カード
                 Expanded(
                   child: Container(
                     padding: EdgeInsets.all(12),
                     margin: EdgeInsets.only(left: 8),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 255, 255, 255),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -392,7 +384,7 @@ class _HomeState extends State<Home> {
                           '悪影響のない\n最大摂取量',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(255, 0, 0, 0),
+                            color: Colors.black,
                           ),
                           textAlign: TextAlign.center,
                         ),
