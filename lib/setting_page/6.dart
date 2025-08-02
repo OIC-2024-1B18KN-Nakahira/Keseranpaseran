@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '6_nitice_button.dart'; 
 
 class Account extends StatelessWidget {
   const Account({super.key});
@@ -20,6 +21,16 @@ class Account extends StatelessWidget {
             child: Icon(Icons.person, size: 48, color: Colors.white),
           ),
           const SizedBox(height: 24),
+          _item(context,
+          title: '通知設定', 
+         onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const NotificationSettings(),
+              ),
+            );
+          }),
           _item(
             context,
             title: 'プロフィール編集',
