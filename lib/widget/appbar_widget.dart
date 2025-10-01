@@ -16,14 +16,14 @@ class Calendar extends StatelessWidget {
 
     return Stack(
       children: [
-        Icon(
+        const Icon(
           Icons.calendar_today,
-          size: 65,
-          color: const Color.fromARGB(255, 50, 50, 50),
+          size: 50,
+          color: Color.fromARGB(255, 50, 50, 50),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 28, left: 17),
-          child: Text(todayText, style: TextStyle(fontSize: 17)),
+          padding: const EdgeInsets.only(top: 20, left: 10),
+          child: Text(todayText, style: TextStyle(fontSize: 15)),
         ),
       ],
     );
@@ -175,48 +175,49 @@ class _AppTitleState extends ConsumerState<AppTitle> {
     ref.watch(dataUpdateNotifierProvider);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.only(top: 5), // 上部パディングを削減
       child: Row(
         children: [
+          // カフェイン摂取量ウィジェット
           Padding(
-            padding: const EdgeInsets.only(right: 10),
+            padding: const EdgeInsets.only(right: 8), // 右マージンを削減
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8), // 角丸を小さく
                     color: Colors.grey[300],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(2.0),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 4, vertical: 1), // パディングを削減
                     child: Text(
-                      "カフェイン摂取量",
+                      "カフェイン",
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10, // フォントサイズを小さく
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
+                SizedBox(height: 2), // 間隔を追加
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: Color(0xFFFFA748), width: 5),
-                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: Color(0xFFFFA748), width: 3), // ボーダーを細く
+                    borderRadius: BorderRadius.circular(15), // 角丸を小さく
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 5,
+                      horizontal: 12, // 水平パディングを削減
+                      vertical: 3, // 垂直パディングを削減
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text(
-                        isLoading ? "読込中..." : "${todayCaffeine}mg/日",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    child: Text(
+                      isLoading ? "読込中" : "${todayCaffeine}mg",
+                      style: TextStyle(
+                        fontSize: 12, // フォントサイズを小さく
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -224,48 +225,49 @@ class _AppTitleState extends ConsumerState<AppTitle> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(right: 15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: Colors.grey[300],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
-                    child: Text(
-                      "睡眠時間",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+          // 睡眠時間ウィジェット
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8), // 角丸を小さく
+                  color: Colors.grey[300],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 4, vertical: 1), // パディングを削減
+                  child: Text(
+                    "睡眠時間",
+                    style: TextStyle(
+                      fontSize: 10, // フォントサイズを小さく
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Color(0xFFFFA748), width: 5),
-                    borderRadius: BorderRadius.circular(20),
+              ),
+              SizedBox(height: 2), // 間隔を追加
+              Container(
+                decoration: BoxDecoration(
+                  border:
+                      Border.all(color: Color(0xFFFFA748), width: 3), // ボーダーを細く
+                  borderRadius: BorderRadius.circular(15), // 角丸を小さく
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12, // 水平パディングを削減
+                    vertical: 3, // 垂直パディングを削減
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 5,
-                    ),
-                    child: Text(
-                      isLoading ? "読込中..." : "${todaySleep}/日",
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Text(
+                    isLoading ? "読込中" : todaySleep,
+                    style: TextStyle(
+                      fontSize: 12, // フォントサイズを小さく
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

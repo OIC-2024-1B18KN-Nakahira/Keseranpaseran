@@ -364,14 +364,14 @@ class _MeunState extends State<Meun> {
   Widget build(BuildContext context) {
     return IntrinsicWidth(
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: 160),
+        constraints: const BoxConstraints(minWidth: 160),
         child: DropdownButtonFormField(
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             contentPadding: EdgeInsets.only(left: 10),
             border: OutlineInputBorder(),
           ),
           value: selecteDrink, //初期値
-          items: [
+          items: const [
             DropdownMenuItem(
               value: "コーヒー",
               child: Text(
@@ -666,8 +666,8 @@ class TimeButton extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.orange,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 2,
                       ),
@@ -686,7 +686,7 @@ class TimeButton extends StatelessWidget {
                       bedtime != null
                           ? "${bedtime!.hour.toString().padLeft(2, '0')}:${bedtime!.minute.toString().padLeft(2, '0')}"
                           : "00:00",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
