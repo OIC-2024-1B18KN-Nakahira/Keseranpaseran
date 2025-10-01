@@ -1,108 +1,70 @@
 import 'dart:async';
-import 'package:flutter/cupertino.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keseranpaseran/acount_page/login.dart';
-import 'package:keseranpaseran/acount_page/account_setting.dart';
-import 'package:keseranpaseran/acount_page/account_create.dart';
-import 'package:keseranpaseran/setting_page/6.dart';
-import 'package:keseranpaseran/setting_page/6_edit_profile.dart';
-import 'package:keseranpaseran/setting_page/6_change_email.dart';
-import 'package:keseranpaseran/setting_page/6_email_sent.dart';
-import 'package:keseranpaseran/history.dart';
-import 'package:keseranpaseran/home.dart';
-import 'package:keseranpaseran/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'acount_page/account_create.dart';
+import 'acount_page/account_setting.dart';
+import 'acount_page/login.dart';
+import 'history.dart';
+import 'home.dart';
+import 'provider.dart';
 import 'record.dart';
+import 'setting_page/6.dart';
+import 'setting_page/6_change_email.dart';
+import 'setting_page/6_edit_profile.dart';
+import 'setting_page/6_email_sent.dart';
 
-final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> calendarNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> todoNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> homeNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> accountNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _recordNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _historyNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _accountNavigatorKey = GlobalKey<NavigatorState>();
 
-class MyApp extends ConsumerWidget {
-  MyApp({super.key});
+class AppRouter {
+  const AppRouter._();
 
-  
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp.router(
-      routerConfig: createRouter(ref),
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 239, 239, 239),
-        ),
-        primaryIconTheme: const IconThemeData(color: Colors.black),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          toolbarHeight: 80,
-        ),
-      ),
-    );
-  }
-
-  GoRouter createRouter(WidgetRef ref) {
+  static GoRouter createRouter(Ref ref) {
     return _createRouterCore(ref.read);
   }
 
-  GoRouter createRouterForProvider(ProviderRef ref) {
-    return _createRouterCore(ref.read);
-  }
-
-  GoRouter _createRouterCore(T Function<T>(ProviderBase<T> provider) read) {
+  static GoRouter _createRouterCore(T Function<T>(ProviderBase<T> provider) read) {
     return GoRouter(
       initialLocation: '/login',
-      navigatorKey: rootNavigatorKey,
-      // リダイレクト機能を追加
+      navigatorKey: _rootNavigatorKey,
       redirect: (BuildContext context, GoRouterState state) {
-        // 認証状態を確認
         final isAuthenticated = read(isAuthenticatedProvider);
         final isLoggingIn = state.uri.toString() == '/login';
         final isCreatingAccount = state.uri.toString().startsWith(
           '/account_create',
         );
 
-        print('=== ルートガード ===');
-        print('現在のパス: ${state.uri}');
-        print('認証状態: $isAuthenticated');
-        print('ログインページか: $isLoggingIn');
-        print('アカウント作成ページか: $isCreatingAccount');
-
-        // 認証されていない場合
         if (!isAuthenticated) {
-          // ログインページまたはアカウント作成ページでない場合はログインページにリダイレクト
           if (!isLoggingIn && !isCreatingAccount) {
-            print('→ ログインページにリダイレクト');
             return '/login';
           }
         } else {
-          // 認証されている場合
-          // ログインページまたはアカウント作成ページにいる場合はホームページにリダイレクト
           if (isLoggingIn || isCreatingAccount) {
-            print('→ ホームページにリダイレクト');
             return '/home';
           }
         }
 
-        print('→ リダイレクトなし');
-        return null; // リダイレクトしない
+        return null;
       },
-      // リフレッシュのタイミングを制御
-      refreshListenable: GoRouterRefreshStream(
+      refreshListenable: _GoRouterRefreshStream(
         Supabase.instance.client.auth.onAuthStateChange,
       ),
       routes: [
-        // 認証が必要なページ群
         StatefulShellRoute.indexedStack(
-          parentNavigatorKey: rootNavigatorKey,
+          parentNavigatorKey: _rootNavigatorKey,
           builder: (context, state, navigationShell) {
-            return AppNavigationBar(navigationShell: navigationShell);
+            return _AppNavigationBar(navigationShell: navigationShell);
           },
           branches: [
             StatefulShellBranch(
-              navigatorKey: calendarNavigatorKey,
+              navigatorKey: _homeNavigatorKey,
               routes: [
                 GoRoute(
                   path: '/home',
@@ -111,7 +73,7 @@ class MyApp extends ConsumerWidget {
               ],
             ),
             StatefulShellBranch(
-              navigatorKey: todoNavigatorKey,
+              navigatorKey: _recordNavigatorKey,
               routes: [
                 GoRoute(
                   path: '/record',
@@ -120,7 +82,7 @@ class MyApp extends ConsumerWidget {
               ],
             ),
             StatefulShellBranch(
-              navigatorKey: homeNavigatorKey,
+              navigatorKey: _historyNavigatorKey,
               routes: [
                 GoRoute(
                   path: '/history',
@@ -129,7 +91,7 @@ class MyApp extends ConsumerWidget {
               ],
             ),
             StatefulShellBranch(
-              navigatorKey: accountNavigatorKey,
+              navigatorKey: _accountNavigatorKey,
               routes: [
                 GoRoute(
                   path: '/account',
@@ -157,7 +119,6 @@ class MyApp extends ConsumerWidget {
             ),
           ],
         ),
-        // 認証が不要なページ群
         GoRoute(
           path: '/login',
           name: 'login',
@@ -178,9 +139,8 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-// GoRouterのリフレッシュ用クラス
-class GoRouterRefreshStream extends ChangeNotifier {
-  GoRouterRefreshStream(Stream stream) {
+class _GoRouterRefreshStream extends ChangeNotifier {
+  _GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
     _subscription = stream.asBroadcastStream().listen(
       (dynamic _) => notifyListeners(),
@@ -196,8 +156,10 @@ class GoRouterRefreshStream extends ChangeNotifier {
   }
 }
 
-class AppNavigationBar extends StatelessWidget {
-  const AppNavigationBar({super.key, required this.navigationShell});
+class _AppNavigationBar extends StatelessWidget {
+  const _AppNavigationBar({
+    required this.navigationShell,
+  });
 
   final StatefulNavigationShell navigationShell;
 
@@ -210,17 +172,27 @@ class AppNavigationBar extends StatelessWidget {
         onDestinationSelected: (index) {
           navigationShell.goBranch(index);
         },
-        destinations: [
+        destinations: const [
           NavigationDestination(
-            icon: const Icon(Icons.home_outlined),
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
             label: 'ホーム',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.edit_document),
+            icon: Icon(Icons.edit_document),
+            selectedIcon: Icon(Icons.edit_document),
             label: '記録',
           ),
-          NavigationDestination(icon: const Icon(Icons.menu_book), label: '履歴'),
-          NavigationDestination(icon: const Icon(Icons.settings), label: '設定'),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book),
+            label: '履歴',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings),
+            label: '設定',
+          ),
         ],
       ),
     );

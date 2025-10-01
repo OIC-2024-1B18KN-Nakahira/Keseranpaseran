@@ -294,16 +294,16 @@ class _HomeState extends ConsumerState<Home> {
   Color getBackgroundColor() {
     if (!hasRequiredData()) {
       // データがない場合は良好状態の色
-      return Color(0xFF8EFF3C);
+      return const Color(0xFF8EFF3C);
     } else if (isDeadHealthStatus()) {
       // 非常に悪い健康状態の場合（カフェイン過剰＋睡眠不足）
-      return Color(0xFFBAB5B5);
+      return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
       // 悪い健康状態の場合（どちらか一方）
-      return Color(0xFF0070D9);
+      return const Color(0xFF0070D9);
     } else {
       // データがあって健康状態が良い場合
-      return Color(0xFF8EFF3C);
+      return const Color(0xFF8EFF3C);
     }
   }
 
@@ -317,11 +317,17 @@ class _HomeState extends ConsumerState<Home> {
     final customAppName = user?.userMetadata?['app_name'] ?? 'ケセランパセラン';
 
     return Scaffold(
-      appBar: AppBar(title: Calendar(), actions: [AppTitle()]),
+      appBar: AppBar(
+        title: const Align(
+          alignment: Alignment.centerLeft, // 左寄せに設定
+          child: Calendar(),
+        ),
+        actions: [AppTitle()],
+      ),
       backgroundColor: getBackgroundColor(),
       body: Column(
         children: [
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           Center(
             child: Image.asset(
               getStatusImagePath(),
@@ -330,30 +336,30 @@ class _HomeState extends ConsumerState<Home> {
               fit: BoxFit.contain,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 243, 153, 8),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
               customAppName, // カスタムアプリ名を表示
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 24),
-            padding: EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 8,
@@ -363,23 +369,23 @@ class _HomeState extends ConsumerState<Home> {
             ),
             child: Text(
               getStatusMessage(),
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
-                    margin: EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       color: const Color.fromARGB(255, 252, 249, 250),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 4,
@@ -389,14 +395,14 @@ class _HomeState extends ConsumerState<Home> {
                     ),
                     child: Column(
                       children: [
-                        Text(
+                        const Text(
                           '状態',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(255, 245, 144, 21),
+                            color: Color.fromARGB(255, 245, 144, 21),
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(getStatusText()),
                       ],
                     ),
@@ -404,14 +410,14 @@ class _HomeState extends ConsumerState<Home> {
                 ),
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
-                    margin: EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(left: 8),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
-                          color: const Color.fromARGB(31, 0, 0, 0),
+                          color: Color.fromARGB(31, 0, 0, 0),
                           blurRadius: 4,
                           offset: Offset(0, 2),
                         ),
@@ -419,7 +425,7 @@ class _HomeState extends ConsumerState<Home> {
                     ),
                     child: Column(
                       children: [
-                        Text(
+                        const Text(
                           '悪影響のない\n最大摂取量',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -427,7 +433,7 @@ class _HomeState extends ConsumerState<Home> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         getRemainingCaffeineWidget(),
                       ],
                     ),
