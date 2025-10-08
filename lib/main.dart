@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-<<<<<<< HEAD
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-=======
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'provider.dart';
 
-<<<<<<< HEAD
 /// アプリケーションのエントリーポイント
 Future<void> main() async {
   // Flutter Widgetバインディングの初期化
@@ -25,19 +21,6 @@ Future<void> main() async {
   await _recordAppOpen();
 
   // アプリケーションの起動
-=======
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  await Supabase.initialize(
-    url: 'https://xcogckezaetipkwsnahp.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhjb2dja2V6YWV0aXBrd3NuYWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDk3NDMsImV4cCI6MjA2NjUyNTc0M30.qAJktQrpAwGqVOZriaRwjWh-HKkCV2x8nUqso6w7LfA',
-  );
-
-  await _recordAppOpen();
-
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
   runApp(
     const ProviderScope(
       child: MainApp(),
@@ -45,7 +28,6 @@ Future<void> main() async {
   );
 }
 
-<<<<<<< HEAD
 /// Supabaseの初期化
 Future<void> _initializeSupabase() async {
   final url = dotenv.env['SUPABASE_URL'];
@@ -75,13 +57,6 @@ Future<void> _recordAppOpen() async {
 }
 
 /// アプリケーションのルートWidget
-=======
-Future<void> _recordAppOpen() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('last_opened', DateTime.now().toIso8601String());
-}
-
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 

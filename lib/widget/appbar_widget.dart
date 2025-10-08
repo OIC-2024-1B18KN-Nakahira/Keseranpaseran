@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keseranpaseran/provider.dart';
-<<<<<<< HEAD
-=======
-import 'package:keseranpaseran/realtime_service.dart';
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
@@ -26,7 +22,7 @@ class Calendar extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.only(top: 20, left: 10),
-          child: Text(todayText, style: TextStyle(fontSize: 15)),
+          child: Text(todayText, style: const TextStyle(fontSize: 15)),
         ),
       ],
     );
@@ -47,39 +43,9 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   @override
   void initState() {
-    super.initState();
-    // リアルタイムコールバックを設定
-<<<<<<< HEAD
-    // RealtimeService.setCaffeineCallback(_onDataChanged);
-    // RealtimeService.setSleepCallback(_onDataChanged);
-=======
-    RealtimeService.setCaffeineCallback(_onDataChanged);
-    RealtimeService.setSleepCallback(_onDataChanged);
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
+    super.initState();;
 
     _loadTodayData();
-  }
-
-  // データ変更時のコールバック
-<<<<<<< HEAD
-=======
-  void _onDataChanged(Map<String, dynamic> payload) {
-    print('AppTitle: データが変更されました');
-    _loadTodayData(); // データを再読み込み
-  }
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
-
-  @override
-  void dispose() {
-    // コールバックをクリア
-<<<<<<< HEAD
-    // RealtimeService.setCaffeineCallback((_) {});
-    // RealtimeService.setSleepCallback((_) {});
-=======
-    RealtimeService.setCaffeineCallback((_) {});
-    RealtimeService.setSleepCallback((_) {});
->>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
-    super.dispose();
   }
 
   // カフェイン計算関数を追加（home.dartと同じ）
@@ -208,7 +174,7 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 4, vertical: 1), // パディングを削減
-                    child: Text(
+                    child: const Text(
                       "カフェイン",
                       style: TextStyle(
                         fontSize: 10, // フォントサイズを小さく
@@ -217,11 +183,11 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                     ),
                   ),
                 ),
-                SizedBox(height: 2), // 間隔を追加
+                const SizedBox(height: 2), // 間隔を追加
                 Container(
                   decoration: BoxDecoration(
-                    border: Border.all(
-                        color: Color(0xFFFFA748), width: 3), // ボーダーを細く
+                    border: const Border.fromBorderSide(
+                        BorderSide(color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
                     borderRadius: BorderRadius.circular(15), // 角丸を小さく
                   ),
                   child: Padding(
@@ -231,7 +197,7 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                     ),
                     child: Text(
                       isLoading ? "読込中" : "${todayCaffeine}mg",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12, // フォントサイズを小さく
                         fontWeight: FontWeight.bold,
                       ),
@@ -253,7 +219,7 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 4, vertical: 1), // パディングを削減
-                  child: Text(
+                  child: const Text(
                     "睡眠時間",
                     style: TextStyle(
                       fontSize: 10, // フォントサイズを小さく
@@ -262,11 +228,11 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                   ),
                 ),
               ),
-              SizedBox(height: 2), // 間隔を追加
+              const SizedBox(height: 2), // 間隔を追加
               Container(
                 decoration: BoxDecoration(
-                  border:
-                      Border.all(color: Color(0xFFFFA748), width: 3), // ボーダーを細く
+                  border: const Border.fromBorderSide(
+                      BorderSide(color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
                   borderRadius: BorderRadius.circular(15), // 角丸を小さく
                 ),
                 child: Padding(
@@ -276,7 +242,7 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                   ),
                   child: Text(
                     isLoading ? "読込中" : todaySleep,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 12, // フォントサイズを小さく
                       fontWeight: FontWeight.bold,
                     ),

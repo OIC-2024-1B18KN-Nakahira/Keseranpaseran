@@ -9,11 +9,13 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: LoginForm()));
+    return const Scaffold(body: Center(child: LoginForm()));
   }
 }
 
 class LoginForm extends StatefulWidget {
+  const LoginForm({super.key});
+
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
@@ -72,7 +74,7 @@ class _LoginFormState extends State<LoginForm> {
           padding: const EdgeInsets.only(bottom: 30),
           child: Column(
             children: [
-              Text(
+              const Text(
                 'アカウントにログイン',
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
@@ -87,7 +89,7 @@ class _LoginFormState extends State<LoginForm> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 30),
           child: TextBox(
             controller: emailController,
             passwordController: passwordController,
