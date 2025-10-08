@@ -21,8 +21,10 @@ class Calendar extends StatelessWidget {
           color: Color.fromARGB(255, 50, 50, 50),
         ),
         Padding(
-          padding: const EdgeInsets.only(top: 20, left: 10),
-          child: Text(todayText, style: const TextStyle(fontSize: 15)),
+          padding: const EdgeInsets.only(top: 23, left: 9),
+          child: Text(todayText,
+              style:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ),
       ],
     );
@@ -43,7 +45,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   @override
   void initState() {
-    super.initState();;
+    super.initState();
+    ;
 
     _loadTodayData();
   }
@@ -186,8 +189,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
                 const SizedBox(height: 2), // 間隔を追加
                 Container(
                   decoration: BoxDecoration(
-                    border: const Border.fromBorderSide(
-                        BorderSide(color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
+                    border: const Border.fromBorderSide(BorderSide(
+                        color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
                     borderRadius: BorderRadius.circular(15), // 角丸を小さく
                   ),
                   child: Padding(
@@ -231,8 +234,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
               const SizedBox(height: 2), // 間隔を追加
               Container(
                 decoration: BoxDecoration(
-                  border: const Border.fromBorderSide(
-                      BorderSide(color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
+                  border: const Border.fromBorderSide(BorderSide(
+                      color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
                   borderRadius: BorderRadius.circular(15), // 角丸を小さく
                 ),
                 child: Padding(
