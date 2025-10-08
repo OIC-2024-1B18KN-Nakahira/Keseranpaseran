@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+<<<<<<< HEAD
 import 'router.dart';
 
 class RealtimeService {
@@ -14,6 +15,11 @@ class RealtimeService {
   }
 }
 
+=======
+import 'realtime_service.dart';
+import 'router.dart';
+
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 final ageProvider = StateProvider<int>((ref) => 0);
 
 final pregnantProvider = StateProvider<bool>((ref) => false);

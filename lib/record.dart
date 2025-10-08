@@ -72,6 +72,7 @@ class _RecordState extends State<Record> {
   Future<void> saveRecord() async {
     try {
       final user = supabase.auth.currentUser;
+<<<<<<< HEAD
       print('=== カフェイン記録保存開始 ===');
       print('ユーザー: ${user?.id}');
 
@@ -92,10 +93,25 @@ class _RecordState extends State<Record> {
 
       // カフェイン記録を保存（caffeine_mgカラムを削除）
       final caffeineData = {
+=======
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('ログインが必要です')));
+        return;
+      }
+
+      // カフェイン量を計算
+      final caffeineAmount = calculateCaffeineAmount();
+
+      // カフェイン記録を保存
+      await supabase.from('caffeine_records').insert({
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
         'user_id': user.id,
         'recorded_at': selectedDateTime.toIso8601String(),
         'drink_type': selectedDrink,
         'amount_ml': selectedAmount,
+<<<<<<< HEAD
         // 'caffeine_mg': caffeineAmount.round(), // この行を削除
       };
 
@@ -110,6 +126,13 @@ class _RecordState extends State<Record> {
       if (bedtime != null && wakeTime != null) {
         print('=== 睡眠記録保存開始 ===');
 
+=======
+        'caffeine_mg': caffeineAmount.round(), // カフェイン量も保存
+      });
+
+      // 睡眠記録を保存（就寝時間と起床時間が両方設定されている場合）
+      if (bedtime != null && wakeTime != null) {
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
         final today = DateTime.now();
         final bedDateTime = DateTime(
           today.year,
@@ -126,6 +149,7 @@ class _RecordState extends State<Record> {
           wakeTime!.minute,
         );
 
+<<<<<<< HEAD
         final adjustedWakeTime = wakeDateTime.isBefore(bedDateTime)
             ? wakeDateTime.add(Duration(days: 1))
             : wakeDateTime;
@@ -133,6 +157,17 @@ class _RecordState extends State<Record> {
         final duration = adjustedWakeTime.difference(bedDateTime);
 
         final sleepData = {
+=======
+        // 起床時間が就寝時間より早い場合は翌日と判断
+        final adjustedWakeTime =
+            wakeDateTime.isBefore(bedDateTime)
+                ? wakeDateTime.add(Duration(days: 1))
+                : wakeDateTime;
+
+        final duration = adjustedWakeTime.difference(bedDateTime);
+
+        await supabase.from('sleep_records').insert({
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
           'user_id': user.id,
           'record_date': today.toIso8601String().split('T')[0],
           'bedtime':
@@ -140,6 +175,7 @@ class _RecordState extends State<Record> {
           'wake_time':
               '${wakeTime!.hour.toString().padLeft(2, '0')}:${wakeTime!.minute.toString().padLeft(2, '0')}:00',
           'sleep_duration_minutes': duration.inMinutes,
+<<<<<<< HEAD
         };
 
         print('睡眠データ: $sleepData');
@@ -158,12 +194,22 @@ class _RecordState extends State<Record> {
 
       resetInputs();
 
+=======
+        });
+      }
+
+      // 保存成功後にリセット
+      resetInputs();
+
+      // 計算されたカフェイン量を表示
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('記録を保存しました（カフェイン: ${caffeineAmount.round()}mg）'),
           duration: Duration(seconds: 3),
         ),
       );
+<<<<<<< HEAD
 
       print('=== 保存完了 ===');
     } catch (error) {
@@ -173,6 +219,12 @@ class _RecordState extends State<Record> {
 
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
+=======
+    } catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
     }
   }
 
@@ -221,8 +273,13 @@ class _RecordState extends State<Record> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Column(
                   children: [
+<<<<<<< HEAD
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 10),
+=======
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
                       child: Text(
                         "カフェインをとった時間",
                         style: TextStyle(fontWeight: FontWeight.bold),
@@ -388,9 +445,15 @@ class Meun extends StatefulWidget {
   State<Meun> createState() => _MeunState();
 }
 
+<<<<<<< HEAD
 class _MeunState extends State<Meun> {
   String _selectedDrink = "コーヒー"; // ローカル変数を追加
 
+=======
+String selecteDrink = "コーヒー"; // このグローバル変数が問題を起こす可能性
+
+class _MeunState extends State<Meun> {
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
   @override
   Widget build(BuildContext context) {
     return IntrinsicWidth(
@@ -401,8 +464,13 @@ class _MeunState extends State<Meun> {
             contentPadding: EdgeInsets.only(left: 10),
             border: OutlineInputBorder(),
           ),
+<<<<<<< HEAD
           value: _selectedDrink, // ローカル変数を使用
           items: [
+=======
+          value: selecteDrink, //初期値
+          items: const [
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
             DropdownMenuItem(
               value: "コーヒー",
               child: Text(
@@ -469,7 +537,11 @@ class _MeunState extends State<Meun> {
           ],
           onChanged: (String? newValue) {
             setState(() {
+<<<<<<< HEAD
               _selectedDrink = newValue!; // ローカル変数を更新
+=======
+              selecteDrink = newValue!;
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
             });
             widget.onDrinkChanged(newValue!);
           },
@@ -484,7 +556,11 @@ class DrinkButton extends StatefulWidget {
   final Function(int) onAmountChanged;
 
   const DrinkButton({Key? key, required this.onAmountChanged})
+<<<<<<< HEAD
       : super(key: key);
+=======
+    : super(key: key);
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 
   @override
   _DrinkButtonState createState() => _DrinkButtonState();
@@ -580,9 +656,16 @@ class _DrinkButtonState extends State<DrinkButton> {
               width: 100,
               height: 150,
               decoration: BoxDecoration(
+<<<<<<< HEAD
                 color: selectedIndex == 2
                     ? Colors.blue.withOpacity(0.2)
                     : Colors.white,
+=======
+                color:
+                    selectedIndex == 2
+                        ? Colors.blue.withOpacity(0.2)
+                        : Colors.white,
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
                 border: Border.all(
                   color: selectedIndex == 2 ? Colors.blue : Colors.orange,
                   width: 2,

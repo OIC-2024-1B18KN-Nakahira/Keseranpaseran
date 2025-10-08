@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+<<<<<<< HEAD
 
 // Simple RealtimeService implementation
 class RealtimeService {
@@ -11,6 +12,9 @@ class RealtimeService {
   static void setSleepCallback(Function(Map<String, dynamic>) callback) {
   }
 }
+=======
+import 'package:keseranpaseran/realtime_service.dart';
+>>>>>>> 911a46959a419d4eb9fb91803ae4249b2e8d51e8
 
 /* --------------------------------------------------
  * 履歴画面  ― 睡眠時間 ＆ カフェイン摂取量
