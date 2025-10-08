@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'provider.dart';
 
+/// アプリケーションのエントリーポイント
 Future<void> main() async {
+  // Flutter Widgetバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Supabase.initialize(
-    url: 'https://xcogckezaetipkwsnahp.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhjb2dja2V6YWV0aXBrd3NuYWhwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5NDk3NDMsImV4cCI6MjA2NjUyNTc0M30.qAJktQrpAwGqVOZriaRwjWh-HKkCV2x8nUqso6w7LfA',
-  );
+  // 環境変数の読み込み
+  await dotenv.load(fileName: '.env');
 
+  // Supabaseの初期化
+  await _initializeSupabase();
+
+  // アプリ起動時刻の記録
   await _recordAppOpen();
 
+  // アプリケーションの起動
   runApp(
     const ProviderScope(
       child: MainApp(),
@@ -23,11 +28,35 @@ Future<void> main() async {
   );
 }
 
-Future<void> _recordAppOpen() async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('last_opened', DateTime.now().toIso8601String());
+/// Supabaseの初期化
+Future<void> _initializeSupabase() async {
+  final url = dotenv.env['SUPABASE_URL'];
+  final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
+
+  if (url == null || anonKey == null) {
+    throw Exception(
+      'Supabase credentials not found. '
+      'Please check your .env file.',
+    );
+  }
+
+  await Supabase.initialize(
+    url: url,
+    anonKey: anonKey,
+  );
 }
 
+/// アプリ起動時刻の記録
+Future<void> _recordAppOpen() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('last_opened', DateTime.now().toIso8601String());
+  } catch (e) {
+    debugPrint('Failed to record app open time: $e');
+  }
+}
+
+/// アプリケーションのルートWidget
 class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 

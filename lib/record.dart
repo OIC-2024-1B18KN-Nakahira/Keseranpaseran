@@ -72,27 +72,44 @@ class _RecordState extends State<Record> {
   Future<void> saveRecord() async {
     try {
       final user = supabase.auth.currentUser;
+      print('=== カフェイン記録保存開始 ===');
+      print('ユーザー: ${user?.id}');
+
       if (user == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('ログインが必要です')));
+        print('エラー: ユーザーがログインしていません');
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('ログインが必要です')));
         return;
       }
 
-      // カフェイン量を計算
+      // カフェイン量を計算（表示用）
       final caffeineAmount = calculateCaffeineAmount();
+      print('計算されたカフェイン量: ${caffeineAmount}mg');
+      print('選択された飲み物: $selectedDrink');
+      print('選択された量: ${selectedAmount}ml');
+      print('記録時間: ${selectedDateTime.toIso8601String()}');
+      print('=== 保存処理開始 ===');
 
-      // カフェイン記録を保存
-      await supabase.from('caffeine_records').insert({
+      // カフェイン記録を保存（caffeine_mgカラムを削除）
+      final caffeineData = {
         'user_id': user.id,
         'recorded_at': selectedDateTime.toIso8601String(),
         'drink_type': selectedDrink,
         'amount_ml': selectedAmount,
-        'caffeine_mg': caffeineAmount.round(), // カフェイン量も保存
-      });
+        // 'caffeine_mg': caffeineAmount.round(), // この行を削除
+      };
 
-      // 睡眠記録を保存（就寝時間と起床時間が両方設定されている場合）
+      print('保存するデータ: $caffeineData');
+
+      final response =
+          await supabase.from('caffeine_records').insert(caffeineData).select();
+
+      print('保存レスポンス: $response');
+
+      // 睡眠記録を保存（既存のコード）
       if (bedtime != null && wakeTime != null) {
+        print('=== 睡眠記録保存開始 ===');
+
         final today = DateTime.now();
         final bedDateTime = DateTime(
           today.year,
@@ -109,15 +126,13 @@ class _RecordState extends State<Record> {
           wakeTime!.minute,
         );
 
-        // 起床時間が就寝時間より早い場合は翌日と判断
-        final adjustedWakeTime =
-            wakeDateTime.isBefore(bedDateTime)
-                ? wakeDateTime.add(Duration(days: 1))
-                : wakeDateTime;
+        final adjustedWakeTime = wakeDateTime.isBefore(bedDateTime)
+            ? wakeDateTime.add(Duration(days: 1))
+            : wakeDateTime;
 
         final duration = adjustedWakeTime.difference(bedDateTime);
 
-        await supabase.from('sleep_records').insert({
+        final sleepData = {
           'user_id': user.id,
           'record_date': today.toIso8601String().split('T')[0],
           'bedtime':
@@ -125,23 +140,39 @@ class _RecordState extends State<Record> {
           'wake_time':
               '${wakeTime!.hour.toString().padLeft(2, '0')}:${wakeTime!.minute.toString().padLeft(2, '0')}:00',
           'sleep_duration_minutes': duration.inMinutes,
-        });
+        };
+
+        print('睡眠データ: $sleepData');
+
+        final sleepResponse =
+            await supabase.from('sleep_records').insert(sleepData).select();
+
+        print('睡眠記録保存レスポンス: $sleepResponse');
       }
 
-      // 保存成功後にリセット
+      // 保存成功後にリアルタイム更新を強制実行
+      print('保存完了 - UI強制更新開始');
+
+      // 少し待ってからコールバックを呼び出し
+      await Future.delayed(Duration(milliseconds: 300));
+
       resetInputs();
 
-      // 計算されたカフェイン量を表示
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('記録を保存しました（カフェイン: ${caffeineAmount.round()}mg）'),
           duration: Duration(seconds: 3),
         ),
       );
+
+      print('=== 保存完了 ===');
     } catch (error) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
+      print('=== 保存エラー ===');
+      print('エラー詳細: $error');
+      print('エラータイプ: ${error.runtimeType}');
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
     }
   }
 
@@ -190,8 +221,8 @@ class _RecordState extends State<Record> {
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
                       child: Text(
                         "カフェインをとった時間",
                         style: TextStyle(fontWeight: FontWeight.bold),
@@ -357,9 +388,9 @@ class Meun extends StatefulWidget {
   State<Meun> createState() => _MeunState();
 }
 
-String selecteDrink = "コーヒー"; // このグローバル変数が問題を起こす可能性
-
 class _MeunState extends State<Meun> {
+  String _selectedDrink = "コーヒー"; // ローカル変数を追加
+
   @override
   Widget build(BuildContext context) {
     return IntrinsicWidth(
@@ -370,8 +401,8 @@ class _MeunState extends State<Meun> {
             contentPadding: EdgeInsets.only(left: 10),
             border: OutlineInputBorder(),
           ),
-          value: selecteDrink, //初期値
-          items: const [
+          value: _selectedDrink, // ローカル変数を使用
+          items: [
             DropdownMenuItem(
               value: "コーヒー",
               child: Text(
@@ -438,7 +469,7 @@ class _MeunState extends State<Meun> {
           ],
           onChanged: (String? newValue) {
             setState(() {
-              selecteDrink = newValue!;
+              _selectedDrink = newValue!; // ローカル変数を更新
             });
             widget.onDrinkChanged(newValue!);
           },
@@ -453,7 +484,7 @@ class DrinkButton extends StatefulWidget {
   final Function(int) onAmountChanged;
 
   const DrinkButton({Key? key, required this.onAmountChanged})
-    : super(key: key);
+      : super(key: key);
 
   @override
   _DrinkButtonState createState() => _DrinkButtonState();
@@ -549,10 +580,9 @@ class _DrinkButtonState extends State<DrinkButton> {
               width: 100,
               height: 150,
               decoration: BoxDecoration(
-                color:
-                    selectedIndex == 2
-                        ? Colors.blue.withOpacity(0.2)
-                        : Colors.white,
+                color: selectedIndex == 2
+                    ? Colors.blue.withOpacity(0.2)
+                    : Colors.white,
                 border: Border.all(
                   color: selectedIndex == 2 ? Colors.blue : Colors.orange,
                   width: 2,
@@ -742,8 +772,8 @@ class TimeButton extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.orange,
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 2,
                       ),
@@ -762,7 +792,7 @@ class TimeButton extends StatelessWidget {
                       wakeTime != null
                           ? "${wakeTime!.hour.toString().padLeft(2, '0')}:${wakeTime!.minute.toString().padLeft(2, '0')}"
                           : "00:00",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -784,7 +814,7 @@ class TimeDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: TextField(
+      title: const TextField(
         decoration: InputDecoration(
           labelText: '時間を入力',
           border: OutlineInputBorder(),
@@ -801,8 +831,8 @@ class TimeDialog extends StatelessWidget {
             onTap: () {
               Navigator.of(context).pop();
             },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
+            child: const Padding(
+              padding: EdgeInsets.symmetric(
                 horizontal: 16.0,
                 vertical: 10,
               ),
@@ -821,8 +851,8 @@ class TimeDialog extends StatelessWidget {
               // 時間を保存する処理
               Navigator.of(context).pop();
             },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 10),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 35, vertical: 10),
               child: Text("保存"),
             ),
           ),
@@ -841,12 +871,12 @@ class RecoedButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.orange, width: 4),
+        side: const BorderSide(color: Colors.orange, width: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       onPressed: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: Text("記録", style: TextStyle(fontSize: 20, color: Colors.orange)),
       ),
     );
