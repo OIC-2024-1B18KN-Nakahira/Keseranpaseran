@@ -12,6 +12,24 @@
 .swiftpm/
 migrate_working_dir/
 
+# Operating System
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+.AppleDouble
+.LSOverride
+._*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -44,3 +62,31 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 pubspec.lock
+
+# Android sensitive files
+android/local.properties
+android/key.properties
+android/**/keystore.properties
+*.jks
+*.keystore
+android/app/google-services.json
+
+# iOS sensitive files
+ios/Runner/GoogleService-Info.plist
+ios/**/*.p12
+ios/**/*.mobileprovision
+ios/**/*.certSigningRequest
+
+# Firebase & Cloud services
+**/google-services.json
+**/GoogleService-Info.plist
+service-account-*.json
+credentials.json
+firebase-debug.log
+.firebase/
+
+# Secrets and API keys
+secrets.yaml
+secrets.json
+secrets.dart
+api_keys.dart
