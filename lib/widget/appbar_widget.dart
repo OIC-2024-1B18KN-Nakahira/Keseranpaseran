@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:keseranpaseran/provider.dart';
-import 'package:keseranpaseran/realtime_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
@@ -46,23 +45,19 @@ class _AppTitleState extends ConsumerState<AppTitle> {
   void initState() {
     super.initState();
     // リアルタイムコールバックを設定
-    RealtimeService.setCaffeineCallback(_onDataChanged);
-    RealtimeService.setSleepCallback(_onDataChanged);
+    // RealtimeService.setCaffeineCallback(_onDataChanged);
+    // RealtimeService.setSleepCallback(_onDataChanged);
 
     _loadTodayData();
   }
 
   // データ変更時のコールバック
-  void _onDataChanged(Map<String, dynamic> payload) {
-    print('AppTitle: データが変更されました');
-    _loadTodayData(); // データを再読み込み
-  }
 
   @override
   void dispose() {
     // コールバックをクリア
-    RealtimeService.setCaffeineCallback((_) {});
-    RealtimeService.setSleepCallback((_) {});
+    // RealtimeService.setCaffeineCallback((_) {});
+    // RealtimeService.setSleepCallback((_) {});
     super.dispose();
   }
 
