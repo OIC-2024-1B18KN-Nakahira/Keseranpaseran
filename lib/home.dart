@@ -1,29 +1,66 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:keseranpaseran/history.dart';
 import 'package:keseranpaseran/widget/appbar_widget.dart';
+import 'package:keseranpaseran/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// Supabaseクライアントを取得
 final supabase = Supabase.instance.client;
 
-class Home extends StatefulWidget {
+class Home extends ConsumerStatefulWidget {
   const Home({super.key});
 
   @override
-  State<Home> createState() => _HomeState();
+  ConsumerState<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+
+// ▼ アニメーションを使うために SingleTickerProviderStateMixin を追加
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   // カフェイン摂取量のデータ（mg）
   double? caffeineIntake;
-
-  // 睡眠時間のデータ（時間）
   double? sleepHours;
+  bool _isLoading = false;
+
+  // ===== ここから浮遊アニメーション用のフィールド =====
+  // 画像の上下アニメーション用コントローラ
+  late final AnimationController _floatCtrl;
+
+  // 上下位置（Y方向）を表すアニメーション値（-10px ～ +10px を往復）
+  late final Animation<double> _floatAnim;
+  // ===== ここまで浮遊アニメーション用のフィールド =====
 
   @override
   void initState() {
     super.initState();
+
+    // ▼ 浮遊アニメーションの初期化
+    // 3秒かけてゆっくり上下に移動して、reverse:true で行ったり来たりを繰り返す
+    _floatCtrl = AnimationController(
+      vsync: this, // Ticker をこの State から供給
+      duration: const Duration(seconds: 3),
+    );
+
+    // -10px から +10px の範囲をイージング（ゆっくり）で往復
+    _floatAnim = Tween<double>(begin: -10.0, end: 10.0).animate(
+      CurvedAnimation(
+        parent: _floatCtrl,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // アニメーション開始（往復）
+    _floatCtrl.repeat(reverse: true);
+
     // 実際のデータ取得処理をここに記述
     loadUserData();
+  }
+
+  @override
+  void dispose() {
+    // アニメーションコントローラは必ず破棄
+    _floatCtrl.dispose();
+    super.dispose();
   }
 
   // ユーザーデータを読み込む関数
@@ -31,14 +68,15 @@ class _HomeState extends State<Home> {
     try {
       print('=== ユーザーデータ取得開始 ===');
 
-      // 現在ログイン中のユーザーIDを取得
       final currentUser = supabase.auth.currentUser;
       if (currentUser == null) {
         print('ユーザーがログインしていません');
-        setState(() {
-          caffeineIntake = null;
-          sleepHours = null;
-        });
+        if (mounted) {
+          setState(() {
+            caffeineIntake = null;
+            sleepHours = null;
+          });
+        }
         return;
       }
 
@@ -46,11 +84,7 @@ class _HomeState extends State<Home> {
 
       // usersテーブルからユーザー情報を取得
       final userResponse =
-          await supabase
-              .from('users')
-              .select('*')
-              .eq('id', currentUser.id)
-              .single();
+      await supabase.from('users').select('*').eq('id', currentUser.id).single();
 
       print('User data: $userResponse');
 
@@ -59,141 +93,207 @@ class _HomeState extends State<Home> {
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-      print('Today: $todayString');
+      print('今日の日付: $todayString');
+      print('ユーザーID: ${currentUser.id}');
 
-      // 今日のカフェイン摂取量を取得（caffeine_recordsテーブルがある場合）
+      // 今日のカフェイン摂取量を取得
       try {
         final caffeineResponse = await supabase
             .from('caffeine_records')
-            .select('amount')
+            .select('amount_ml, drink_type')
             .eq('user_id', currentUser.id)
-            .gte('recorded_at', '${todayString} 00:00:00')
-            .lt('recorded_at', '${todayString} 23:59:59');
+            .gte('recorded_at', '${todayString}T00:00:00.000Z')
+            .lt('recorded_at',
+                '${DateTime(today.year, today.month, today.day + 1).toIso8601String().substring(0, 10)}T00:00:00.000Z');
 
-        print('Caffeine records: $caffeineResponse');
+        print('カフェインレスポンス: $caffeineResponse');
 
-        // 今日のカフェイン摂取量を合計
         double totalCaffeine = 0.0;
-        for (var record in caffeineResponse) {
-          totalCaffeine += (record['amount'] as num).toDouble();
+        for (final record in caffeineResponse) {
+          final amountMl = record['amount_ml'] as int? ?? 0;
+          final drinkType = record['drink_type'] as String? ?? 'コーヒー';
+
+          final caffeineFromRecord =
+              calculateCaffeineFromRecord(drinkType, amountMl);
+          totalCaffeine += caffeineFromRecord;
+
+          print('記録: $drinkType ${amountMl}ml → ${caffeineFromRecord}mg');
         }
 
-        print('Total caffeine today: $totalCaffeine mg');
+        print('合計カフェイン: ${totalCaffeine}mg');
 
-        setState(() {
-          caffeineIntake = totalCaffeine;
-        });
+        if (mounted) {
+          setState(() {
+            caffeineIntake = totalCaffeine;
+          });
+        }
       } catch (caffeineError) {
         print('カフェインデータ取得エラー: $caffeineError');
-        // テーブルが存在しない場合はテストデータを使用
-        setState(() {
-          caffeineIntake = 450.0; // テスト用
-        });
+        if (mounted) {
+          setState(() {
+            caffeineIntake = 0.0;
+          });
+        }
       }
 
-      // 今日の睡眠時間を取得（sleep_recordsテーブルがある場合）
+      // 今日の睡眠時間を取得
       try {
         final sleepResponse = await supabase
             .from('sleep_records')
-            .select('hours')
+            .select('sleep_duration_minutes')
             .eq('user_id', currentUser.id)
-            .gte('recorded_at', '${todayString} 00:00:00')
-            .lt('recorded_at', '${todayString} 23:59:59')
-            .order('recorded_at', ascending: false)
-            .limit(1);
+            .eq('record_date', todayString);
 
-        print('Sleep records: $sleepResponse');
+        print('睡眠レスポンス: $sleepResponse');
 
         if (sleepResponse.isNotEmpty) {
-          final sleepHours = (sleepResponse[0]['hours'] as num).toDouble();
-          print('Sleep hours today: $sleepHours hours');
+          int totalSleepMinutes = 0;
+          for (var record in sleepResponse) {
+            final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
+            totalSleepMinutes += sleepMinutes;
+          }
 
-          setState(() {
-            this.sleepHours = sleepHours;
-          });
+          double totalSleepHours = totalSleepMinutes / 60.0;
+          print('合計睡眠時間: ${totalSleepHours}時間');
+
+          if (mounted) {
+            setState(() {
+              sleepHours = totalSleepHours;
+            });
+          }
         } else {
-          print('今日の睡眠記録がありません');
-          setState(() {
-            sleepHours = null;
-          });
+          print('睡眠データなし');
+          if (mounted) {
+            setState(() {
+              sleepHours = null;
+            });
+          }
         }
       } catch (sleepError) {
         print('睡眠データ取得エラー: $sleepError');
-        // テーブルが存在しない場合はテストデータを使用
-        setState(() {
-          sleepHours = 6.0; // テスト用（7時間未満）
-        });
+        if (mounted) {
+          setState(() {
+            sleepHours = 0.0;
+          });
+        }
       }
 
-      print('=== 最終データ ===');
-      print('Caffeine Intake: $caffeineIntake mg');
-      print('Sleep Hours: $sleepHours hours');
-      print('Bad Status: ${isBadHealthStatus()}');
-      print('Image Path: ${getStatusImagePath()}');
-    } catch (error) {
-      print('=== データ取得エラー ===');
-      print('Error: $error');
+      print('=== データ取得完了 ===');
+      print('カフェイン: ${caffeineIntake}mg');
+      print('睡眠: ${sleepHours}時間');
 
-      // エラー時はテストデータを使用
-      setState(() {
-        caffeineIntake = 450.0; // badStatus.pngが表示されるテストデータ
-        sleepHours = 6.0; // badStatus.pngが表示されるテストデータ
-      });
+      // 他の画面にデータ更新を通知
+      provider.notifyDataUpdate(ref);
+    } catch (error) {
+      print('データ取得エラー: $error');
+      if (mounted) {
+        setState(() {
+          caffeineIntake = 0.0;
+          sleepHours = 0.0;
+        });
+      }
     }
   }
 
-  // データが存在するかチェックする関数
+  // カフェイン計算関数
+  double calculateCaffeineFromRecord(String drinkType, int amountMl) {
+    switch (drinkType) {
+      case "コーラ":
+        return (amountMl / 350.0) * 40.0;
+      case "コーヒー":
+      case "紅茶":
+        return (amountMl / 200.0) * 60.0;
+      case "栄養ドリンク":
+      case "エナジードリンク":
+        return (amountMl / 100.0) * 150.0;
+      case "緑茶":
+        return (amountMl / 200.0) * 20.0;
+      case "ウーロン茶":
+        return (amountMl / 200.0) * 20.0;
+      case "ココア":
+        return (amountMl / 200.0) * 5.0;
+      case "その他":
+        return (amountMl / 200.0) * 60.0;
+      default:
+        return 0.0;
+    }
+  }
+
+  // 健康状態をデバッグ出力する関数
+  void debugHealthStatus() {
+    print('=== 健康状態デバッグ ===');
+    print('データ有無: ${hasRequiredData()}');
+    print('悪い状態: ${isBadHealthStatus()}');
+    print('非常に悪い状態: ${isDeadHealthStatus()}');
+    print('メッセージ: ${getStatusMessage()}');
+    print('状態テキスト: ${getStatusText()}');
+    print('背景色: ${getBackgroundColor()}');
+    print('画像パス: ${getStatusImagePath()}');
+  }
+
+  // データが存在するかチェック
   bool hasRequiredData() {
     return caffeineIntake != null && sleepHours != null;
   }
 
-  // 健康状態が悪いかどうかを判定する関数
+  // カフェイン摂取基準を取得（妊娠状態を考慮）
+  double getCaffeineLimit() {
+    final isPregnant = ref.read(provider.pregnantProvider);
+    return isPregnant ? 200.0 : 400.0;
+  }
+
+  // 健康状態が悪いかどうかを判定
   bool isBadHealthStatus() {
     if (!hasRequiredData()) {
-      return false; // データがない場合は悪い状態ではない
+      return false;
     }
 
+    final caffeineLimit = getCaffeineLimit();
+    final isCaffeineExcessive = caffeineIntake! >= caffeineLimit;
+    final isSleepInsufficient = sleepHours! < 7.0;
+
+    if (isDeadHealthStatus()) {
+      return false;
+    }
+
+    // ※元コードのロジックを尊重してそのまま
     // カフェイン摂取量が400mg以上 または 睡眠時間が7時間未満（どちらか一方）
     return (caffeineIntake! >= 400.0 && sleepHours! >= 7.0) ||
         (caffeineIntake! < 400.0 && sleepHours! < 7.0);
   }
 
-  // 健康状態が非常に悪いかどうかを判定する関数（新規追加）
+  // 健康状態が非常に悪いかどうかを判定
   bool isDeadHealthStatus() {
     if (!hasRequiredData()) {
-      return false; // データがない場合は悪い状態ではない
+      return false;
     }
 
-    // カフェイン摂取量が400mg以上 かつ 睡眠時間が7時間未満（両方）
-    return caffeineIntake! >= 400.0 && sleepHours! < 7.0;
+    final caffeineLimit = getCaffeineLimit();
+    return caffeineIntake! >= caffeineLimit && sleepHours! < 7.0;
   }
 
-  // 表示する画像のパスを決定する関数
+  // 表示する画像のパスを決定
   String getStatusImagePath() {
     if (!hasRequiredData()) {
-      // データがない場合は良好状態の画像
       return 'assets/goodStatus.png';
     } else if (isDeadHealthStatus()) {
-      // 非常に悪い健康状態の場合（カフェイン過剰＋睡眠不足）
       return 'assets/deadStatus.png';
     } else if (isBadHealthStatus()) {
-      // 悪い健康状態の場合（どちらか一方）
       return 'assets/badStatus.png';
     } else {
-      // データがあって健康状態が良い場合
       return 'assets/goodStatus.png';
     }
   }
 
-  // メッセージを取得する関数
+  // メッセージを取得
   String getStatusMessage() {
     if (!hasRequiredData()) {
       return 'データがありません';
     } else if (isDeadHealthStatus()) {
       return 'カフェイン過剰摂取と睡眠が足りないよ';
     } else if (isBadHealthStatus()) {
-      // どちらか一方の問題がある場合
-      if (caffeineIntake! >= 400.0) {
+      final caffeineLimit = getCaffeineLimit();
+      if (caffeineIntake! >= caffeineLimit) {
         return 'カフェインの取り過ぎだ';
       } else {
         return '睡眠が足りません';
@@ -203,7 +303,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  // 状態テキストを取得する関数
+  // 状態テキストを取得
   String getStatusText() {
     if (!hasRequiredData()) {
       return 'ふつう';
@@ -216,15 +316,15 @@ class _HomeState extends State<Home> {
     }
   }
 
-  // 残りカフェイン摂取量を計算する関数
+  // 残りカフェイン摂取量を計算
   double getRemainingCaffeine() {
     if (caffeineIntake == null) {
-      return 400.0; // データがない場合は400mg
+      return getCaffeineLimit();
     }
-    return 400.0 - caffeineIntake!;
+    return getCaffeineLimit() - caffeineIntake!;
   }
 
-  // 残りカフェイン摂取量のテキストと色を取得する関数
+  // 残りカフェイン摂取量のウィジェット
   Widget getRemainingCaffeineWidget() {
     final remaining = getRemainingCaffeine();
     final isNegative = remaining < 0;
@@ -239,65 +339,94 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 背景色を取得する関数（新規追加）
+  // 背景色を取得
   Color getBackgroundColor() {
     if (!hasRequiredData()) {
       // データがない場合は良好状態の色
-      return Color(0xFF8EFF3C);
+      return const Color(0xFF8EFF3C);
     } else if (isDeadHealthStatus()) {
       // 非常に悪い健康状態の場合（カフェイン過剰＋睡眠不足）
-      return Color(0xFFBAB5B5);
+      return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
       // 悪い健康状態の場合（どちらか一方）
-      return Color(0xFF0070D9);
+      return const Color(0xFF0070D9);
     } else {
       // データがあって健康状態が良い場合
-      return Color(0xFF8EFF3C);
+      return const Color(0xFF8EFF3C);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // データ更新通知を監視
+    ref.watch(provider.dataUpdateNotifierProvider);
+
+    // カスタムアプリ名を取得
+    final user = supabase.auth.currentUser;
+    final customAppName = user?.userMetadata?['app_name'] ?? 'ケセランパセラン';
+
+    print('=== BUILD実行 ===');
+    print('カフェイン: $caffeineIntake');
+    print('睡眠: $sleepHours');
+    print('ローディング: $_isLoading');
+    print('画像: ${getStatusImagePath()}');
+    print('背景色: ${getBackgroundColor()}');
+
     return Scaffold(
-      appBar: AppBar(title: Calendar(), actions: [AppTitle()]),
+      appBar: AppBar(title: const Calendar(), actions: const [AppTitle()]),
       backgroundColor: getBackgroundColor(), // 背景色を健康状態に応じて変更
       body: Column(
         children: [
-          //上部の余白
-          SizedBox(height: 24),
-          //画像を表示（データの有無と健康状態に応じて切り替え）
+          // 上部の余白
+          const SizedBox(height: 24),
+
+          // ▼ 画像を上下に“浮かせる”アニメーション
+          // AnimatedBuilder で _floatAnim の値に応じて Y 方向に平行移動させる
           Center(
-            child: Image.asset(
-              getStatusImagePath(),
-              width: 220, // 必要に応じて調整
-              height: 220,
-              fit: BoxFit.contain,
+            child: AnimatedBuilder(
+              animation: _floatAnim,
+              builder: (context, child) {
+                return Transform.translate(
+                  // Yだけ動かす（Xは0）
+                  offset: Offset(0, _floatAnim.value),
+                  child: child,
+                );
+              },
+              // child には元々の Image.asset をそのまま入れる
+              child: Image.asset(
+                getStatusImagePath(),
+                width: 220, // 必要に応じて調整
+                height: 220,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-          SizedBox(height: 16), //ケセランパセララベル
+
+          const SizedBox(height: 16), // ケセランパセラ ラベル
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 243, 153, 8),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Text(
+            child: const Text(
               'ケセランパセラン',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 255, 255, 255),
+                color: Color.fromARGB(255, 255, 255, 255),
               ),
             ),
           ),
-          SizedBox(height: 8), //下部の余白
+
+          const SizedBox(height: 8), // 下部の余白
           Container(
-            margin: EdgeInsets.symmetric(horizontal: 24),
-            padding: EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 8,
@@ -307,25 +436,26 @@ class _HomeState extends State<Home> {
             ),
             child: Text(
               getStatusMessage(),
-              style: TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ),
-          SizedBox(height: 16),
+
+          const SizedBox(height: 16),
+
           // 下部の2つのカード
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                // 状態カード
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
-                    margin: EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(right: 8),
                     decoration: BoxDecoration(
                       color: const Color.fromARGB(255, 252, 249, 250),
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
                           color: Colors.black12,
                           blurRadius: 4,
@@ -335,30 +465,29 @@ class _HomeState extends State<Home> {
                     ),
                     child: Column(
                       children: [
-                        Text(
+                        const Text(
                           '状態',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(255, 245, 144, 21),
+                            color: Color.fromARGB(255, 245, 144, 21),
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Text(getStatusText()),
                       ],
                     ),
                   ),
                 ),
-                // 最大摂取量カード
                 Expanded(
                   child: Container(
-                    padding: EdgeInsets.all(12),
-                    margin: EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(left: 8),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 255, 255, 255),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
+                      boxShadow: const [
                         BoxShadow(
-                          color: const Color.fromARGB(31, 0, 0, 0),
+                          color: Color.fromARGB(31, 0, 0, 0),
                           blurRadius: 4,
                           offset: Offset(0, 2),
                         ),
@@ -366,15 +495,15 @@ class _HomeState extends State<Home> {
                     ),
                     child: Column(
                       children: [
-                        Text(
+                        const Text(
                           '悪影響のない\n最大摂取量',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: const Color.fromARGB(255, 0, 0, 0),
+                            color: Color.fromARGB(255, 0, 0, 0),
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         getRemainingCaffeineWidget(),
                       ],
                     ),
