@@ -33,6 +33,7 @@ dependencies:
   go_router: ^14.8.1
   flutter_animate: ^4.5.2
   supabase_flutter: ^2.0.0
+  flutter_riverpod: ^2.6.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -67,7 +68,9 @@ flutter:
     - assets/coffee01_blend.png
     - assets/drink_coffee_cup01_espresso.png
     - assets/drink_coffee_cup07_american.png
-    - assets\raw.png
+    - assets/badStatus.png
+    - assets/goodStatus.png
+    - assets/deadStatus.png
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
