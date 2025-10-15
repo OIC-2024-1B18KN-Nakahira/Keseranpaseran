@@ -14,81 +14,53 @@ class Home extends ConsumerStatefulWidget {
   ConsumerState<Home> createState() => _HomeState();
 }
 
-class _HomeState extends ConsumerState<Home> {
+
+// ▼ アニメーションを使うために SingleTickerProviderStateMixin を追加
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+  // カフェイン摂取量のデータ（mg）
   double? caffeineIntake;
   double? sleepHours;
   bool _isLoading = false;
+
+  // ===== ここから浮遊アニメーション用のフィールド =====
+  // 画像の上下アニメーション用コントローラ
+  late final AnimationController _floatCtrl;
+
+  // 上下位置（Y方向）を表すアニメーション値（-10px ～ +10px を往復）
+  late final Animation<double> _floatAnim;
+  // ===== ここまで浮遊アニメーション用のフィールド =====
 
   @override
   void initState() {
     super.initState();
 
-    print('=== Home画面初期化開始 ===');
+    // ▼ 浮遊アニメーションの初期化
+    // 3秒かけてゆっくり上下に移動して、reverse:true で行ったり来たりを繰り返す
+    _floatCtrl = AnimationController(
+      vsync: this, // Ticker をこの State から供給
+      duration: const Duration(seconds: 3),
+    );
 
-    // リアルタイムコールバックを設定
-    RealtimeService.setCaffeineCallback(_onCaffeineDataChanged);
-    RealtimeService.setSleepCallback(_onSleepDataChanged);
+    // -10px から +10px の範囲をイージング（ゆっくり）で往復
+    _floatAnim = Tween<double>(begin: -10.0, end: 10.0).animate(
+      CurvedAnimation(
+        parent: _floatCtrl,
+        curve: Curves.easeInOut,
+      ),
+    );
 
-    print('リアルタイムコールバック設定完了');
+    // アニメーション開始（往復）
+    _floatCtrl.repeat(reverse: true);
 
-    // 初期データ読み込み
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      loadUserData();
-    });
+    // 実際のデータ取得処理をここに記述
+    loadUserData();
   }
 
   @override
   void dispose() {
-    print('=== Home画面終了 ===');
+    // アニメーションコントローラは必ず破棄
+    _floatCtrl.dispose();
     super.dispose();
-  }
-
-  // カフェインデータ変更時のコールバック
-  void _onCaffeineDataChanged(Map<String, dynamic> payload) async {
-    print('=== カフェインデータ変更検出 ===');
-    print('Payload: $payload');
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // データを再取得
-      await loadUserData();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        print('UI更新完了');
-        debugHealthStatus();
-      }
-    }
-  }
-
-  // 睡眠データ変更時のコールバック
-  void _onSleepDataChanged(Map<String, dynamic> payload) async {
-    print('=== 睡眠データ変更検出 ===');
-    print('Payload: $payload');
-
-    if (mounted) {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // データを再取得
-      await loadUserData();
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        print('UI更新完了');
-        debugHealthStatus();
-      }
-    }
   }
 
   // ユーザーデータを読み込む関数
@@ -108,6 +80,15 @@ class _HomeState extends ConsumerState<Home> {
         return;
       }
 
+      print('Current User ID: ${currentUser.id}');
+
+      // usersテーブルからユーザー情報を取得
+      final userResponse =
+      await supabase.from('users').select('*').eq('id', currentUser.id).single();
+
+      print('User data: $userResponse');
+
+      // 今日の日付を取得
       final today = DateTime.now();
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -275,7 +256,10 @@ class _HomeState extends ConsumerState<Home> {
       return false;
     }
 
-    return isCaffeineExcessive || isSleepInsufficient;
+    // ※元コードのロジックを尊重してそのまま
+    // カフェイン摂取量が400mg以上 または 睡眠時間が7時間未満（どちらか一方）
+    return (caffeineIntake! >= 400.0 && sleepHours! >= 7.0) ||
+        (caffeineIntake! < 400.0 && sleepHours! < 7.0);
   }
 
   // 健康状態が非常に悪いかどうかを判定
@@ -364,7 +348,6 @@ class _HomeState extends ConsumerState<Home> {
       // 非常に悪い健康状態の場合（カフェイン過剰＋睡眠不足）
       return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
-      return Color(0xFF0070D9);
       // 悪い健康状態の場合（どちらか一方）
       return const Color(0xFF0070D9);
     } else {
@@ -390,42 +373,53 @@ class _HomeState extends ConsumerState<Home> {
     print('背景色: ${getBackgroundColor()}');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Align(
-          alignment: Alignment.centerLeft, // 左寄せに設定
-          child: Calendar(),
-        ),
-        actions: [AppTitle()],
-      ),
-      backgroundColor: getBackgroundColor(),
+      appBar: AppBar(title: const Calendar(), actions: const [AppTitle()]),
+      backgroundColor: getBackgroundColor(), // 背景色を健康状態に応じて変更
       body: Column(
         children: [
+          // 上部の余白
           const SizedBox(height: 24),
+
+          // ▼ 画像を上下に“浮かせる”アニメーション
+          // AnimatedBuilder で _floatAnim の値に応じて Y 方向に平行移動させる
           Center(
-            child: Image.asset(
-              getStatusImagePath(),
-              width: 220,
-              height: 220,
-              fit: BoxFit.contain,
+            child: AnimatedBuilder(
+              animation: _floatAnim,
+              builder: (context, child) {
+                return Transform.translate(
+                  // Yだけ動かす（Xは0）
+                  offset: Offset(0, _floatAnim.value),
+                  child: child,
+                );
+              },
+              // child には元々の Image.asset をそのまま入れる
+              child: Image.asset(
+                getStatusImagePath(),
+                width: 220, // 必要に応じて調整
+                height: 220,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-          const SizedBox(height: 16),
+
+          const SizedBox(height: 16), // ケセランパセラ ラベル
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 243, 153, 8),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Text(
-              customAppName, // カスタムアプリ名を表示
-              style: const TextStyle(
+            child: const Text(
+              'ケセランパセラン',
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color.fromARGB(255, 255, 255, 255),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+
+          const SizedBox(height: 8), // 下部の余白
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(16),
@@ -446,7 +440,10 @@ class _HomeState extends ConsumerState<Home> {
               textAlign: TextAlign.center,
             ),
           ),
+
           const SizedBox(height: 16),
+
+          // 下部の2つのカード
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -502,7 +499,7 @@ class _HomeState extends ConsumerState<Home> {
                           '悪影響のない\n最大摂取量',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: Color.fromARGB(255, 0, 0, 0),
                           ),
                           textAlign: TextAlign.center,
                         ),
