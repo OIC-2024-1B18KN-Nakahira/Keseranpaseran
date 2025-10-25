@@ -14,9 +14,9 @@ class Home extends ConsumerStatefulWidget {
   ConsumerState<Home> createState() => _HomeState();
 }
 
-
 // ▼ アニメーションを使うために SingleTickerProviderStateMixin を追加
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends ConsumerState<Home>
+    with SingleTickerProviderStateMixin {
   // カフェイン摂取量のデータ（mg）
   double? caffeineIntake;
   double? sleepHours;
@@ -144,8 +144,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       print('Current User ID: ${currentUser.id}');
 
       // usersテーブルからユーザー情報を取得
-      final userResponse =
-      await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      final userResponse = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
 
       print('User data: $userResponse');
 
@@ -309,9 +312,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return false;
     }
 
-    final caffeineLimit = getCaffeineLimit();
-    final isCaffeineExcessive = caffeineIntake! >= caffeineLimit;
-    final isSleepInsufficient = sleepHours! < 7.0;
+    getCaffeineLimit();
 
     if (isDeadHealthStatus()) {
       return false;
@@ -410,6 +411,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
       // 悪い健康状態の場合（どちらか一方）
+      return const Color(0xFFFFD54F);
     } else {
       // データがあって健康状態が良い場合
       return const Color(0xFF8EFF3C);
@@ -422,8 +424,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     ref.watch(provider.dataUpdateNotifierProvider);
 
     // カスタムアプリ名を取得
-    final user = supabase.auth.currentUser;
-    final customAppName = user?.userMetadata?['app_name'] ?? 'ケセランパセラン';
 
     print('=== BUILD実行 ===');
     print('カフェイン: $caffeineIntake');
@@ -433,7 +433,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     print('背景色: ${getBackgroundColor()}');
 
     return Scaffold(
-      appBar: AppBar(title: const Calendar(), actions: const [AppTitle()]),
+      appBar: AppBar(
+        title: const Align(
+          alignment: Alignment.centerLeft, // 左寄せに設定
+          child: Calendar(),
+        ),
+        actions: [AppTitle()],
+      ),
       backgroundColor: getBackgroundColor(), // 背景色を健康状態に応じて変更
       body: Column(
         children: [
