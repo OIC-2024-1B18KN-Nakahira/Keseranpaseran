@@ -18,6 +18,7 @@ class _RecordState extends State<Record> {
   int selectedAmount = 200; // 200mlに修正（1杯の標準サイズ）
   TimeOfDay? bedtime;
   TimeOfDay? wakeTime;
+  bool _hasCaffeineDataChanged = false; // カフェインデータが変更されたかを追跡
 
   // カフェイン含有量を計算する関数
   double calculateCaffeineAmount() {
@@ -65,6 +66,7 @@ class _RecordState extends State<Record> {
       selectedAmount = 200; // 200mlに修正
       bedtime = null;
       wakeTime = null;
+      _hasCaffeineDataChanged = false; // カフェインフラグもリセット
     });
   }
 
@@ -72,7 +74,7 @@ class _RecordState extends State<Record> {
   Future<void> saveRecord() async {
     try {
       final user = supabase.auth.currentUser;
-      print('=== カフェイン記録保存開始 ===');
+      print('=== 記録保存開始 ===');
       print('ユーザー: ${user?.id}');
 
       if (user == null) {
@@ -82,35 +84,71 @@ class _RecordState extends State<Record> {
         return;
       }
 
-      // カフェイン量を計算（表示用）
-      final caffeineAmount = calculateCaffeineAmount();
-      print('計算されたカフェイン量: ${caffeineAmount}mg');
-      print('選択された飲み物: $selectedDrink');
-      print('選択された量: ${selectedAmount}ml');
-      print('記録時間: ${selectedDateTime.toIso8601String()}');
-      print('=== 保存処理開始 ===');
+      // カフェインデータも睡眠データも記録されていない場合はエラー
+      if (!_hasCaffeineDataChanged && (bedtime == null || wakeTime == null)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('カフェインまたは睡眠時間のいずれかを記録してください'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
 
-      // カフェイン記録を保存（caffeine_mgカラムを削除）
-      final caffeineData = {
-        'user_id': user.id,
-        'recorded_at': selectedDateTime.toIso8601String(),
-        'drink_type': selectedDrink,
-        'amount_ml': selectedAmount,
-        // 'caffeine_mg': caffeineAmount.round(), // この行を削除
-      };
+      double caffeineAmount = 0.0;
 
-      print('保存するデータ: $caffeineData');
+      // カフェインデータが変更されている場合のみ保存
+      if (_hasCaffeineDataChanged) {
+        // カフェイン量を計算（表示用）
+        caffeineAmount = calculateCaffeineAmount();
+        print('計算されたカフェイン量: ${caffeineAmount}mg');
+        print('選択された飲み物: $selectedDrink');
+        print('選択された量: ${selectedAmount}ml');
+        print('記録時間: ${selectedDateTime.toIso8601String()}');
+        print('=== カフェイン記録保存処理開始 ===');
 
-      final response =
-          await supabase.from('caffeine_records').insert(caffeineData).select();
+        // カフェイン記録を保存
+        final caffeineData = {
+          'user_id': user.id,
+          'recorded_at': selectedDateTime.toIso8601String(),
+          'drink_type': selectedDrink,
+          'amount_ml': selectedAmount,
+        };
 
-      print('保存レスポンス: $response');
+        print('保存するデータ: $caffeineData');
+
+        final response = await supabase
+            .from('caffeine_records')
+            .insert(caffeineData)
+            .select();
+
+        print('保存レスポンス: $response');
+      } else {
+        print('カフェインデータは変更されていないため、保存をスキップします');
+      }
 
       // 睡眠記録を保存（既存のコード）
       if (bedtime != null && wakeTime != null) {
         print('=== 睡眠記録保存開始 ===');
 
         final today = DateTime.now();
+        final recordDate = today.toIso8601String().split('T')[0];
+
+        print('今日の日付: $recordDate');
+
+        // 同じ日の既存の睡眠記録を削除
+        try {
+          final deleteResponse = await supabase
+              .from('sleep_records')
+              .delete()
+              .eq('user_id', user.id)
+              .eq('record_date', recordDate);
+
+          print('既存の睡眠記録を削除しました');
+        } catch (deleteError) {
+          print('既存の睡眠記録の削除エラー（記録がない場合は正常）: $deleteError');
+        }
+
         final bedDateTime = DateTime(
           today.year,
           today.month,
@@ -132,9 +170,13 @@ class _RecordState extends State<Record> {
 
         final duration = adjustedWakeTime.difference(bedDateTime);
 
+        print('就寝時間: ${bedtime!.hour}:${bedtime!.minute}');
+        print('起床時間: ${wakeTime!.hour}:${wakeTime!.minute}');
+        print('睡眠時間: ${duration.inMinutes}分');
+
         final sleepData = {
           'user_id': user.id,
-          'record_date': today.toIso8601String().split('T')[0],
+          'record_date': recordDate,
           'bedtime':
               '${bedtime!.hour.toString().padLeft(2, '0')}:${bedtime!.minute.toString().padLeft(2, '0')}:00',
           'wake_time':
@@ -142,7 +184,7 @@ class _RecordState extends State<Record> {
           'sleep_duration_minutes': duration.inMinutes,
         };
 
-        print('睡眠データ: $sleepData');
+        print('新しい睡眠データ: $sleepData');
 
         final sleepResponse =
             await supabase.from('sleep_records').insert(sleepData).select();
@@ -158,9 +200,19 @@ class _RecordState extends State<Record> {
 
       resetInputs();
 
+      // 保存した内容に応じてメッセージを作成
+      String message = '記録を保存しました';
+      if (_hasCaffeineDataChanged && bedtime != null && wakeTime != null) {
+        message = '記録を保存しました（カフェイン: ${caffeineAmount.round()}mg、睡眠時間も保存）';
+      } else if (_hasCaffeineDataChanged) {
+        message = '記録を保存しました（カフェイン: ${caffeineAmount.round()}mg）';
+      } else if (bedtime != null && wakeTime != null) {
+        message = '記録を保存しました（睡眠時間のみ）';
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('記録を保存しました（カフェイン: ${caffeineAmount.round()}mg）'),
+          content: Text(message),
           duration: Duration(seconds: 3),
         ),
       );
@@ -182,7 +234,13 @@ class _RecordState extends State<Record> {
     final currentCaffeine = calculateCaffeineAmount();
 
     return Scaffold(
-      appBar: AppBar(title: Calendar(), actions: [AppTitle()]), //追加
+      appBar: AppBar(
+        title: const Align(
+          alignment: Alignment.centerLeft, // 左寄せに設定
+          child: Calendar(),
+        ),
+        actions: [AppTitle()],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -257,6 +315,8 @@ class _RecordState extends State<Record> {
                                   time.hour,
                                   time.minute,
                                 );
+                                _hasCaffeineDataChanged =
+                                    true; // カフェインデータが変更されたことを記録
                               });
                             }
                           }
@@ -268,7 +328,7 @@ class _RecordState extends State<Record> {
                           ),
                           child: Text(
                             "${selectedDateTime.year}年${selectedDateTime.month}月${selectedDateTime.day}日　${selectedDateTime.hour.toString().padLeft(2, '0')}:${selectedDateTime.minute.toString().padLeft(2, '0')}",
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
@@ -276,12 +336,14 @@ class _RecordState extends State<Record> {
                   ],
                 ),
               ),
-              Text("飲み物の種類", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text("飲み物の種類",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               Meun(
                 key: ValueKey(selectedDrink), // キーを追加してリビルドを強制
                 onDrinkChanged: (drink) {
                   setState(() {
                     selectedDrink = drink;
+                    _hasCaffeineDataChanged = true; // カフェインデータが変更されたことを記録
                   });
                 },
               ),
@@ -311,6 +373,7 @@ class _RecordState extends State<Record> {
                       onAmountChanged: (amount) {
                         setState(() {
                           selectedAmount = amount;
+                          _hasCaffeineDataChanged = true; // カフェインデータが変更されたことを記録
                         });
                       },
                     ),
@@ -322,7 +385,7 @@ class _RecordState extends State<Record> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       "本日の睡眠時間",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,

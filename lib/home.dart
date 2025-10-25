@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keseranpaseran/history.dart';
+import 'package:keseranpaseran/realtime_service.dart' as realtime;
 import 'package:keseranpaseran/widget/appbar_widget.dart';
 import 'package:keseranpaseran/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -34,6 +34,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    print('=== Home画面初期化開始 ===');
+
+    // リアルタイムコールバックを設定
+    realtime.RealtimeService.setCaffeineCallback(_onCaffeineDataChanged);
+    realtime.RealtimeService.setSleepCallback(_onSleepDataChanged);
+
+    print('リアルタイムコールバック設定完了');
     // ▼ 浮遊アニメーションの初期化
     // 3秒かけてゆっくり上下に移動して、reverse:true で行ったり来たりを繰り返す
     _floatCtrl = AnimationController(
@@ -61,6 +68,60 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     // アニメーションコントローラは必ず破棄
     _floatCtrl.dispose();
     super.dispose();
+  }
+
+  // カフェインデータ変更時のコールバック
+  void _onCaffeineDataChanged(Map<String, dynamic> payload) async {
+    print('=== カフェインデータ変更検出 ===');
+    print('Payload: $payload');
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // データベースのコミット完了を待つために少し遅延
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // データを再取得
+      await loadUserData();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        print('UI更新完了');
+        debugHealthStatus();
+      }
+    }
+  }
+
+  // 睡眠データ変更時のコールバック
+  void _onSleepDataChanged(Map<String, dynamic> payload) async {
+    print('=== 睡眠データ変更検出 ===');
+    print('Payload: $payload');
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // データベースのコミット完了を待つために遅延（睡眠データは少し長めに）
+      await Future.delayed(Duration(milliseconds: 1000));
+
+      // データを再取得
+      await loadUserData();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        print('UI更新完了');
+        debugHealthStatus();
+      }
+    }
   }
 
   // ユーザーデータを読み込む関数
@@ -140,7 +201,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       try {
         final sleepResponse = await supabase
             .from('sleep_records')
-            .select('sleep_duration_minutes')
+            .select('sleep_duration_minutes, record_date')
             .eq('user_id', currentUser.id)
             .eq('record_date', todayString);
 
@@ -349,7 +410,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
       // 悪い健康状態の場合（どちらか一方）
-      return const Color(0xFF0070D9);
     } else {
       // データがあって健康状態が良い場合
       return const Color(0xFF8EFF3C);

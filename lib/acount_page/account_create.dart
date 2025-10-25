@@ -182,7 +182,7 @@ class _FormState extends ConsumerState<Form> {
   @override
   Widget build(BuildContext context) {
     // デバッグ用：現在のproviderの値を取得
-    final currentAge = ref.watch(ageProvider);
+    ref.watch(ageProvider);
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
