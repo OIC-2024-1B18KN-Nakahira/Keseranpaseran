@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:keseranpaseran/history.dart';
+import 'package:keseranpaseran/realtime_service.dart' as realtime;
 import 'package:keseranpaseran/widget/appbar_widget.dart';
 import 'package:keseranpaseran/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,9 +14,9 @@ class Home extends ConsumerStatefulWidget {
   ConsumerState<Home> createState() => _HomeState();
 }
 
-
 // ▼ アニメーションを使うために SingleTickerProviderStateMixin を追加
-class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
+class _HomeState extends ConsumerState<Home>
+    with SingleTickerProviderStateMixin {
   // カフェイン摂取量のデータ（mg）
   double? caffeineIntake;
   double? sleepHours;
@@ -34,6 +34,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    print('=== Home画面初期化開始 ===');
+
+    // リアルタイムコールバックを設定
+    realtime.RealtimeService.setCaffeineCallback(_onCaffeineDataChanged);
+    realtime.RealtimeService.setSleepCallback(_onSleepDataChanged);
+
+    print('リアルタイムコールバック設定完了');
     // ▼ 浮遊アニメーションの初期化
     // 3秒かけてゆっくり上下に移動して、reverse:true で行ったり来たりを繰り返す
     _floatCtrl = AnimationController(
@@ -63,6 +70,60 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
+  // カフェインデータ変更時のコールバック
+  void _onCaffeineDataChanged(Map<String, dynamic> payload) async {
+    print('=== カフェインデータ変更検出 ===');
+    print('Payload: $payload');
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // データベースのコミット完了を待つために少し遅延
+      await Future.delayed(Duration(milliseconds: 500));
+
+      // データを再取得
+      await loadUserData();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        print('UI更新完了');
+        debugHealthStatus();
+      }
+    }
+  }
+
+  // 睡眠データ変更時のコールバック
+  void _onSleepDataChanged(Map<String, dynamic> payload) async {
+    print('=== 睡眠データ変更検出 ===');
+    print('Payload: $payload');
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      // データベースのコミット完了を待つために遅延（睡眠データは少し長めに）
+      await Future.delayed(Duration(milliseconds: 1000));
+
+      // データを再取得
+      await loadUserData();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        print('UI更新完了');
+        debugHealthStatus();
+      }
+    }
+  }
+
   // ユーザーデータを読み込む関数
   Future<void> loadUserData() async {
     try {
@@ -83,8 +144,11 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       print('Current User ID: ${currentUser.id}');
 
       // usersテーブルからユーザー情報を取得
-      final userResponse =
-      await supabase.from('users').select('*').eq('id', currentUser.id).single();
+      final userResponse = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
 
       print('User data: $userResponse');
 
@@ -140,7 +204,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       try {
         final sleepResponse = await supabase
             .from('sleep_records')
-            .select('sleep_duration_minutes')
+            .select('sleep_duration_minutes, record_date')
             .eq('user_id', currentUser.id)
             .eq('record_date', todayString);
 
@@ -248,9 +312,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return false;
     }
 
-    final caffeineLimit = getCaffeineLimit();
-    final isCaffeineExcessive = caffeineIntake! >= caffeineLimit;
-    final isSleepInsufficient = sleepHours! < 7.0;
+    getCaffeineLimit();
 
     if (isDeadHealthStatus()) {
       return false;
@@ -349,7 +411,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
       return const Color(0xFFBAB5B5);
     } else if (isBadHealthStatus()) {
       // 悪い健康状態の場合（どちらか一方）
-      return const Color(0xFF0070D9);
+      return const Color(0xFFFFD54F);
     } else {
       // データがあって健康状態が良い場合
       return const Color(0xFF8EFF3C);
@@ -362,8 +424,6 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     ref.watch(provider.dataUpdateNotifierProvider);
 
     // カスタムアプリ名を取得
-    final user = supabase.auth.currentUser;
-    final customAppName = user?.userMetadata?['app_name'] ?? 'ケセランパセラン';
 
     print('=== BUILD実行 ===');
     print('カフェイン: $caffeineIntake');
@@ -373,7 +433,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
     print('背景色: ${getBackgroundColor()}');
 
     return Scaffold(
-      appBar: AppBar(title: const Calendar(), actions: const [AppTitle()]),
+      appBar: AppBar(
+        title: const Align(
+          alignment: Alignment.centerLeft, // 左寄せに設定
+          child: Calendar(),
+        ),
+        actions: [AppTitle()],
+      ),
       backgroundColor: getBackgroundColor(), // 背景色を健康状態に応じて変更
       body: Column(
         children: [

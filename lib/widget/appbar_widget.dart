@@ -46,9 +46,10 @@ class _AppTitleState extends ConsumerState<AppTitle> {
   @override
   void initState() {
     super.initState();
-    ;
 
-    _loadTodayData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTodayData();
+    });
   }
 
   // カフェイン計算関数を追加（home.dartと同じ）
@@ -77,8 +78,10 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   Future<void> _loadTodayData() async {
     try {
+      print('=== AppBar: データ取得開始 ===');
       final user = supabase.auth.currentUser;
       if (user == null) {
+        print('AppBar: ユーザー未ログイン');
         setState(() {
           isLoading = false;
         });
@@ -88,6 +91,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
       final today = DateTime.now();
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
+      print('AppBar: 今日の日付 = $todayString');
 
       // 今日のカフェイン摂取量を取得（修正版）
       final caffeineResponse = await supabase
@@ -109,12 +114,16 @@ class _AppTitleState extends ConsumerState<AppTitle> {
         totalCaffeine += calculateCaffeineFromRecord(drinkType, amountMl);
       }
 
+      print('AppBar: カフェイン合計 = ${totalCaffeine.round()}mg');
+
       // 今日の睡眠時間を取得（すべての記録を合計）
       final sleepResponse = await supabase
           .from('sleep_records')
           .select('sleep_duration_minutes')
           .eq('user_id', user.id)
           .eq('record_date', todayString);
+
+      print('AppBar: 睡眠レスポンス = $sleepResponse');
 
       String sleepTime = "0時間";
       if (sleepResponse.isNotEmpty) {
@@ -123,6 +132,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
           final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
           totalSleepMinutes += sleepMinutes;
         }
+
+        print('AppBar: 睡眠合計 = ${totalSleepMinutes}分');
 
         final hours = totalSleepMinutes ~/ 60;
         final minutes = totalSleepMinutes % 60;
@@ -136,7 +147,11 @@ class _AppTitleState extends ConsumerState<AppTitle> {
         } else {
           sleepTime = "0時間";
         }
+      } else {
+        print('AppBar: 睡眠データなし');
       }
+
+      print('AppBar: 睡眠表示 = $sleepTime');
 
       setState(() {
         todayCaffeine = totalCaffeine.round();
@@ -144,10 +159,9 @@ class _AppTitleState extends ConsumerState<AppTitle> {
         isLoading = false;
       });
 
-      // データ更新を通知
-      notifyDataUpdate(ref);
+      print('=== AppBar: データ取得完了 ===');
     } catch (error) {
-      print('データ取得エラー: $error');
+      print('AppBar: データ取得エラー: $error');
       setState(() {
         isLoading = false;
       });
@@ -156,8 +170,13 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   @override
   Widget build(BuildContext context) {
-    // データ更新通知を監視
-    ref.watch(dataUpdateNotifierProvider);
+    // データ更新通知を監視し、変更時にデータを再取得
+    ref.listen<int>(dataUpdateNotifierProvider, (previous, next) {
+      print('AppBar: データ更新通知を受信 (previous: $previous, next: $next)');
+      if (previous != next) {
+        _loadTodayData();
+      }
+    });
 
     return Padding(
       padding: const EdgeInsets.only(top: 5), // 上部パディングを削減

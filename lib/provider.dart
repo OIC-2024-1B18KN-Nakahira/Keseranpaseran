@@ -2,17 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'realtime_service.dart';
 import 'router.dart';
-
-class RealtimeService {
-  static void startListening() {
-    // Implementation for starting realtime listening
-  }
-  
-  static void stopListening() {
-    // Implementation for stopping realtime listening
-  }
-}
 
 final ageProvider = StateProvider<int>((ref) => 0);
 
