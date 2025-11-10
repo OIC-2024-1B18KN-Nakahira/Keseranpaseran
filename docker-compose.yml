@@ -1,0 +1,14 @@
+services:
+  mail:
+    image: axllent/mailpit:latest
+    ports:
+      - "19925:1025"  # SMTP
+      - "19980:8025"  # Web UI
+    volumes:
+      - ./mailpit:/data
+    environment:
+      TZ: Asia/Tokyo
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
