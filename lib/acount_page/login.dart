@@ -70,15 +70,15 @@ class _LoginFormState extends State<LoginForm> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 30),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 30),
           child: Column(
             children: [
-              const Text(
+              Text(
                 'アカウントにログイン',
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
-              const Divider(
+              Divider(
                 height: 20,
                 thickness: 2,
                 indent: 50,
@@ -101,7 +101,7 @@ class _LoginFormState extends State<LoginForm> {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               errorMessage,
-              style: TextStyle(color: Colors.red, fontSize: 16),
+              style: const TextStyle(color: Colors.red, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ),
@@ -112,8 +112,8 @@ class _LoginFormState extends State<LoginForm> {
             isLoading: isLoading,
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
           child: Column(children: [PassButton(), RegisterButton()]),
         ),
       ],
@@ -149,7 +149,7 @@ class _TextBoxState extends State<TextBox> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('メールアドレス'),
+        const Text('メールアドレス'),
         TextField(
           controller: widget.controller,
           decoration: const InputDecoration(
@@ -159,7 +159,7 @@ class _TextBoxState extends State<TextBox> {
             ),
           ),
         ),
-        Text('パスワード'),
+        const Text('パスワード'),
         TextField(
           controller: widget.passwordController,
           onChanged: _onChanged,
@@ -203,7 +203,7 @@ class LoginButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
         child:
             isLoading
-                ? SizedBox(
+                ? const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
@@ -211,7 +211,7 @@ class LoginButton extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
-                : Text(
+                : const Text(
                   'ログイン',
                   style: TextStyle(color: Colors.white, fontSize: 30),
                 ),
@@ -226,8 +226,8 @@ class PassButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextButton(
-      onPressed: () {},
-      child: Text(
+      onPressed: () => context.push('/password_reset'),
+      child: const Text(
         'パスワードを忘れた方はこちら',
         style: TextStyle(
           color: Colors.blue,
@@ -248,7 +248,7 @@ class RegisterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextButton(
       onPressed: () => context.push('/account_create2'),
-      child: Text(
+      child: const Text(
         'アカウント作成はこちら',
         style: TextStyle(
           color: Colors.blue,

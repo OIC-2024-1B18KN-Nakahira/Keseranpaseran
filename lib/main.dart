@@ -43,6 +43,9 @@ Future<void> _initializeSupabase() async {
   await Supabase.initialize(
     url: url,
     anonKey: anonKey,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+    ),
   );
 }
 
@@ -57,11 +60,42 @@ Future<void> _recordAppOpen() async {
 }
 
 /// アプリケーションのルートWidget
-class MainApp extends ConsumerWidget {
+class MainApp extends ConsumerStatefulWidget {
   const MainApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends ConsumerState<MainApp> {
+  @override
+  void initState() {
+    super.initState();
+    _handleDeepLinks();
+  }
+
+  /// Deep Linkの処理
+  void _handleDeepLinks() {
+    // 認証状態の変化を監視
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      debugPrint('Auth event: $event');
+
+      if (event == AuthChangeEvent.signedIn) {
+        // ログイン成功時の処理
+        debugPrint('User signed in');
+      } else if (event == AuthChangeEvent.passwordRecovery) {
+        // パスワードリセット時の処理
+        debugPrint('Password recovery');
+        // パスワード更新画面に遷移
+        final router = ref.read(routerProvider);
+        router.go('/password_update');
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(

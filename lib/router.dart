@@ -8,6 +8,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'acount_page/account_create.dart';
 import 'acount_page/account_setting.dart';
 import 'acount_page/login.dart';
+import 'acount_page/password_reset.dart';
+import 'acount_page/password_update.dart';
 import 'history.dart';
 import 'home.dart';
 import 'provider.dart';
@@ -40,9 +42,11 @@ class AppRouter {
         final isCreatingAccount = state.uri.toString().startsWith(
           '/account_create',
         );
+        final isPasswordReset = state.uri.toString() == '/password_reset';
+        final isPasswordUpdate = state.uri.toString() == '/password_update';
 
         if (!isAuthenticated) {
-          if (!isLoggingIn && !isCreatingAccount) {
+          if (!isLoggingIn && !isCreatingAccount && !isPasswordReset && !isPasswordUpdate) {
             return '/login';
           }
         } else {
@@ -133,6 +137,16 @@ class AppRouter {
           path: '/account_create2',
           name: 'accountCreate2',
           builder: (context, state) => const AccountCreate2(),
+        ),
+        GoRoute(
+          path: '/password_reset',
+          name: 'passwordReset',
+          builder: (context, state) => const PasswordResetPage(),
+        ),
+        GoRoute(
+          path: '/password_update',
+          name: 'passwordUpdate',
+          builder: (context, state) => const PasswordUpdatePage(),
         ),
       ],
     );
