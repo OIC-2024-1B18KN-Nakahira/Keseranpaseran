@@ -13,6 +13,7 @@
 migrate_working_dir/
 .env
 
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -46,3 +47,4 @@ app.*.map.json
 /android/app/release
 pubspec.lock
 /devtools_options.yaml
+.env

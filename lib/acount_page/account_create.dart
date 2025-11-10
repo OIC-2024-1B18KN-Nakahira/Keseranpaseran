@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:keseranpaseran/provider.dart';
 
@@ -11,7 +10,7 @@ class AccountCreate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Center(child: Form()));
+    return const Scaffold(body: Center(child: Form()));
   }
 }
 
@@ -27,8 +26,9 @@ class _FormState extends ConsumerState<Form> {
   final passwordController = TextEditingController();
   bool isLoading = false;
   String errorMessage = '';
+  String successMessage = '';
 
-  // アカウント作成処理（修正版）
+  // アカウント作成処理
   Future<void> signUpNewUser() async {
     // 入力チェック
     if (emailController.text.trim().isEmpty ||
@@ -64,52 +64,42 @@ class _FormState extends ConsumerState<Form> {
     try {
       print('=== Step 1: Supabase認証開始 ===');
 
-      // Supabaseでアカウント作成
-      final AuthResponse authResponse = await supabase.auth.signUp(
+      // Supabaseでアカウント作成（メール確認必須）
+      final AuthResponse response = await supabase.auth.signUp(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
+        emailRedirectTo: 'io.supabase.flutter://login-callback/',
+        data: {
+          'age': age,
+          'is_pregnant': isPregnant,
+        },
       );
 
-      print('AuthResponse User: ${authResponse.user?.id}');
+      print('AuthResponse User: ${response.user?.id}');
       print(
-        'AuthResponse Session: ${authResponse.session?.accessToken != null ? "あり" : "なし"}',
+        'AuthResponse Session: ${response.session?.accessToken != null ? "あり" : "なし"}',
       );
 
-      if (authResponse.user != null) {
-        print('=== Step 2: 認証完了待機 ===');
-
-        // 認証が完全に処理されるまで待機
-        await Future.delayed(Duration(seconds: 2));
-
-        // 現在のセッション状態を確認
-        final currentUser = supabase.auth.currentUser;
-        final currentSession = supabase.auth.currentSession;
-
-        print('Current User: ${currentUser?.id}');
-        print(
-          'Current Session: ${currentSession?.accessToken != null ? "あり" : "なし"}',
-        );
-
-        print('=== Step 3: データベース保存開始 ===');
-
-        // usersテーブルにユーザー情報を保存
-        await saveUserToDatabase(authResponse.user!.id, age, isPregnant);
-
-        print('=== Step 4: 完了処理 ===');
+      if (response.user != null) {
+        print('=== Step 2: メール送信完了 ===');
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('アカウントが作成されました'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          setState(() {
+            errorMessage = '';
+            successMessage =
+                '確認メールを送信しました。\nメール内のリンクをクリックしてアカウントを有効化してください。';
+          });
+
+          // 5秒後にログイン画面に戻る
+          Future.delayed(const Duration(seconds: 5), () {
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          });
 
           // providerをリセット
           ref.read(ageProvider.notifier).state = 0;
           ref.read(pregnantProvider.notifier).state = false;
-
-          context.go('/login');
         }
       } else {
         print('AuthResponse.user is null');
@@ -134,51 +124,6 @@ class _FormState extends ConsumerState<Form> {
     }
   }
 
-  // usersテーブルにデータを保存する関数（シンプル版）
-  Future<void> saveUserToDatabase(
-    String userId,
-    int age,
-    bool isPregnant,
-  ) async {
-    print('=== データベース保存開始 ===');
-    print('User ID: $userId');
-    print('現在のauth.currentUser: ${supabase.auth.currentUser?.id}');
-    print(
-      '現在のauth.currentSession: ${supabase.auth.currentSession?.accessToken != null ? "あり" : "なし"}',
-    );
-
-    try {
-      // より単純なデータ構造でテスト
-      final userData = {
-        'id': userId,
-        'email': emailController.text.trim(),
-        'age': age,
-        'is_pregnant': isPregnant,
-      };
-
-      print('保存予定データ: $userData');
-
-      // insertではなくupsertを使用（存在しない場合は挿入、存在する場合は更新）
-      final response = await supabase.from('users').upsert(userData).select();
-
-      print('=== データベース保存成功 ===');
-      print('Response: $response');
-    } catch (error) {
-      print('=== データ保存エラー ===');
-      print('Error: $error');
-      print('Error Type: ${error.runtimeType}');
-
-      // エラーをUIに表示
-      if (mounted) {
-        setState(() {
-          errorMessage = 'データ保存エラー: $error';
-        });
-      }
-
-      rethrow;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // デバッグ用：現在のproviderの値を取得
@@ -187,15 +132,15 @@ class _FormState extends ConsumerState<Form> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 30),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 30),
           child: Column(
             children: [
               Text(
                 'アカウントを作成',
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
               ),
-              const Divider(
+              Divider(
                 height: 20,
                 thickness: 2,
                 indent: 50,
@@ -206,7 +151,7 @@ class _FormState extends ConsumerState<Form> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 30),
           child: TextBox(
             controller: emailController,
             passwordController: passwordController,
@@ -218,7 +163,17 @@ class _FormState extends ConsumerState<Form> {
             padding: const EdgeInsets.all(16.0),
             child: Text(
               errorMessage,
-              style: TextStyle(color: Colors.red, fontSize: 16),
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        // 成功メッセージを表示
+        if (successMessage.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              successMessage,
+              style: const TextStyle(color: Colors.green, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ),
@@ -294,7 +249,7 @@ class AccountCreatButton extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         child: isLoading
-            ? SizedBox(
+            ? const SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
@@ -302,7 +257,7 @@ class AccountCreatButton extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : Text(
+            : const Text(
                 'アカウント作成',
                 style: TextStyle(
                   color: Colors.white,
