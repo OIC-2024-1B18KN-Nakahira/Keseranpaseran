@@ -436,7 +436,7 @@ class _HomeState extends ConsumerState<Home>
       appBar: AppBar(
         title: const Align(
           alignment: Alignment.centerLeft, // 左寄せに設定
-          child: Calendar(),
+          child: CalendarIcon(),
         ),
         actions: [AppTitle()],
       ),
