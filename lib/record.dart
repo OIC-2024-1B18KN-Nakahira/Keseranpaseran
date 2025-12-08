@@ -1,90 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-//他のファイルで作成したwidgetを使う
-import 'widget/appbar_widget.dart'; //追加
+import 'widget/appbar_widget.dart';
+import 'provider.dart' as provider;
 
 final supabase = Supabase.instance.client;
 
-class Record extends StatefulWidget {
+class Record extends ConsumerStatefulWidget {
   const Record({super.key});
 
   @override
-  State<Record> createState() => _RecordState();
+  ConsumerState<Record> createState() => _RecordState();
 }
 
-class _RecordState extends State<Record> {
+class _RecordState extends ConsumerState<Record> {
   DateTime selectedDateTime = DateTime.now();
   String selectedDrink = "コーヒー";
-  int selectedAmount = 200; // 200mlに修正（1杯の標準サイズ）
+  int selectedAmount = 200;
   TimeOfDay? bedtime;
   TimeOfDay? wakeTime;
-  bool _hasCaffeineDataChanged = false; // カフェインデータが変更されたかを追跡
+  bool _hasCaffeineDataChanged = false;
 
-  // カフェイン含有量を計算する関数
   double calculateCaffeineAmount() {
     switch (selectedDrink) {
       case "コーラ":
-        // コーラ: 40mg/1缶(350ml)
         return (selectedAmount / 350.0) * 40.0;
-
       case "コーヒー":
       case "紅茶":
-        // コーヒー・紅茶: 60mg/1杯(200ml)
         return (selectedAmount / 200.0) * 60.0;
-
       case "栄養ドリンク":
       case "エナジードリンク":
-        // 栄養ドリンク・エナジードリンク: 150mg/1本(100ml)
         return (selectedAmount / 100.0) * 150.0;
-
       case "緑茶":
-        // 緑茶: 20mg/1杯(200ml)
         return (selectedAmount / 200.0) * 20.0;
-
       case "ウーロン茶":
-        // ウーロン茶: 20mg/1杯(200ml)
         return (selectedAmount / 200.0) * 20.0;
-
       case "ココア":
-        // ココア: 5mg/1杯(200ml)
         return (selectedAmount / 200.0) * 5.0;
-
       case "その他":
-        // その他: カフェイン含有量を推定（コーヒーと同等）
         return (selectedAmount / 200.0) * 60.0;
-
       default:
         return 0.0;
     }
   }
 
-  // 入力をリセットする関数
   void resetInputs() {
     setState(() {
       selectedDateTime = DateTime.now();
       selectedDrink = "コーヒー";
-      selectedAmount = 200; // 200mlに修正
+      selectedAmount = 200;
       bedtime = null;
       wakeTime = null;
-      _hasCaffeineDataChanged = false; // カフェインフラグもリセット
+      _hasCaffeineDataChanged = false;
     });
   }
 
-  // データを保存する関数
   Future<void> saveRecord() async {
     try {
       final user = supabase.auth.currentUser;
-      print('=== 記録保存開始 ===');
-      print('ユーザー: ${user?.id}');
 
       if (user == null) {
-        print('エラー: ユーザーがログインしていません');
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('ログインが必要です')));
         return;
       }
 
-      // カフェインデータも睡眠データも記録されていない場合はエラー
       if (!_hasCaffeineDataChanged && (bedtime == null || wakeTime == null)) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -97,17 +77,9 @@ class _RecordState extends State<Record> {
 
       double caffeineAmount = 0.0;
 
-      // カフェインデータが変更されている場合のみ保存
       if (_hasCaffeineDataChanged) {
-        // カフェイン量を計算（表示用）
         caffeineAmount = calculateCaffeineAmount();
-        print('計算されたカフェイン量: ${caffeineAmount}mg');
-        print('選択された飲み物: $selectedDrink');
-        print('選択された量: ${selectedAmount}ml');
-        print('記録時間: ${selectedDateTime.toIso8601String()}');
-        print('=== カフェイン記録保存処理開始 ===');
 
-        // カフェイン記録を保存
         final caffeineData = {
           'user_id': user.id,
           'recorded_at': selectedDateTime.toIso8601String(),
@@ -115,39 +87,20 @@ class _RecordState extends State<Record> {
           'amount_ml': selectedAmount,
         };
 
-        print('保存するデータ: $caffeineData');
-
-        final response = await supabase
-            .from('caffeine_records')
-            .insert(caffeineData)
-            .select();
-
-        print('保存レスポンス: $response');
-      } else {
-        print('カフェインデータは変更されていないため、保存をスキップします');
+        await supabase.from('caffeine_records').insert(caffeineData).select();
       }
 
-      // 睡眠記録を保存（既存のコード）
       if (bedtime != null && wakeTime != null) {
-        print('=== 睡眠記録保存開始 ===');
-
         final today = DateTime.now();
         final recordDate = today.toIso8601String().split('T')[0];
 
-        print('今日の日付: $recordDate');
-
-        // 同じ日の既存の睡眠記録を削除
         try {
-          final deleteResponse = await supabase
+          await supabase
               .from('sleep_records')
               .delete()
               .eq('user_id', user.id)
               .eq('record_date', recordDate);
-
-          print('既存の睡眠記録を削除しました');
-        } catch (deleteError) {
-          print('既存の睡眠記録の削除エラー（記録がない場合は正常）: $deleteError');
-        }
+        } catch (_) {}
 
         final bedDateTime = DateTime(
           today.year,
@@ -170,10 +123,6 @@ class _RecordState extends State<Record> {
 
         final duration = adjustedWakeTime.difference(bedDateTime);
 
-        print('就寝時間: ${bedtime!.hour}:${bedtime!.minute}');
-        print('起床時間: ${wakeTime!.hour}:${wakeTime!.minute}');
-        print('睡眠時間: ${duration.inMinutes}分');
-
         final sleepData = {
           'user_id': user.id,
           'record_date': recordDate,
@@ -184,23 +133,14 @@ class _RecordState extends State<Record> {
           'sleep_duration_minutes': duration.inMinutes,
         };
 
-        print('新しい睡眠データ: $sleepData');
-
-        final sleepResponse =
-            await supabase.from('sleep_records').insert(sleepData).select();
-
-        print('睡眠記録保存レスポンス: $sleepResponse');
+        await supabase.from('sleep_records').insert(sleepData).select();
       }
 
-      // 保存成功後にリアルタイム更新を強制実行
-      print('保存完了 - UI強制更新開始');
-
-      // 少し待ってからコールバックを呼び出し
+      provider.notifyDataUpdate(ref);
       await Future.delayed(Duration(milliseconds: 300));
 
       resetInputs();
 
-      // 保存した内容に応じてメッセージを作成
       String message = '記録を保存しました';
       if (_hasCaffeineDataChanged && bedtime != null && wakeTime != null) {
         message = '記録を保存しました（カフェイン: ${caffeineAmount.round()}mg、睡眠時間も保存）';
@@ -211,18 +151,9 @@ class _RecordState extends State<Record> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: Duration(seconds: 3),
-        ),
+        SnackBar(content: Text(message), duration: Duration(seconds: 3)),
       );
-
-      print('=== 保存完了 ===');
     } catch (error) {
-      print('=== 保存エラー ===');
-      print('エラー詳細: $error');
-      print('エラータイプ: ${error.runtimeType}');
-
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('保存に失敗しました: $error')));
     }
@@ -230,14 +161,13 @@ class _RecordState extends State<Record> {
 
   @override
   Widget build(BuildContext context) {
-    // 現在のカフェイン量を計算して表示
     final currentCaffeine = calculateCaffeineAmount();
 
     return Scaffold(
       appBar: AppBar(
         title: const Align(
-          alignment: Alignment.centerLeft, // 左寄せに設定
-          child: Calendar(),
+          alignment: Alignment.centerLeft,
+          child: CalendarIcon(),
         ),
         actions: [AppTitle()],
       ),
@@ -248,8 +178,6 @@ class _RecordState extends State<Record> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("記録", style: TextStyle(fontWeight: FontWeight.bold)),
-
-              // カフェイン量表示
               Container(
                 margin: EdgeInsets.symmetric(vertical: 10),
                 padding: EdgeInsets.all(12),
@@ -274,7 +202,6 @@ class _RecordState extends State<Record> {
                   ],
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Column(
@@ -302,9 +229,8 @@ class _RecordState extends State<Record> {
                           if (picked != null) {
                             final TimeOfDay? time = await showTimePicker(
                               context: context,
-                              initialTime: TimeOfDay.fromDateTime(
-                                selectedDateTime,
-                              ),
+                              initialTime:
+                                  TimeOfDay.fromDateTime(selectedDateTime),
                             );
                             if (time != null) {
                               setState(() {
@@ -315,8 +241,7 @@ class _RecordState extends State<Record> {
                                   time.hour,
                                   time.minute,
                                 );
-                                _hasCaffeineDataChanged =
-                                    true; // カフェインデータが変更されたことを記録
+                                _hasCaffeineDataChanged = true;
                               });
                             }
                           }
@@ -339,11 +264,11 @@ class _RecordState extends State<Record> {
               const Text("飲み物の種類",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               Meun(
-                key: ValueKey(selectedDrink), // キーを追加してリビルドを強制
+                key: ValueKey(selectedDrink),
                 onDrinkChanged: (drink) {
                   setState(() {
                     selectedDrink = drink;
-                    _hasCaffeineDataChanged = true; // カフェインデータが変更されたことを記録
+                    _hasCaffeineDataChanged = true;
                   });
                 },
               ),
@@ -358,7 +283,7 @@ class _RecordState extends State<Record> {
                         color: Colors.grey.withOpacity(0.5),
                         spreadRadius: 2,
                         blurRadius: 5,
-                        offset: Offset(0, 3), // changes position of shadow
+                        offset: Offset(0, 3),
                       ),
                     ],
                     color: Colors.white,
@@ -369,11 +294,11 @@ class _RecordState extends State<Record> {
                       vertical: 10,
                     ),
                     child: DrinkButton(
-                      key: ValueKey(selectedAmount), // キーを追加してリビルドを強制
+                      key: ValueKey(selectedAmount),
                       onAmountChanged: (amount) {
                         setState(() {
                           selectedAmount = amount;
-                          _hasCaffeineDataChanged = true; // カフェインデータが変更されたことを記録
+                          _hasCaffeineDataChanged = true;
                         });
                       },
                     ),
@@ -401,7 +326,7 @@ class _RecordState extends State<Record> {
                             color: Colors.grey.withOpacity(0.5),
                             spreadRadius: 2,
                             blurRadius: 5,
-                            offset: Offset(0, 3), // changes position of shadow
+                            offset: Offset(0, 3),
                           ),
                         ],
                         color: Colors.white,
@@ -452,7 +377,7 @@ class Meun extends StatefulWidget {
 }
 
 class _MeunState extends State<Meun> {
-  String _selectedDrink = "コーヒー"; // ローカル変数を追加
+  String _selectedDrink = "コーヒー";
 
   @override
   Widget build(BuildContext context) {
@@ -464,7 +389,7 @@ class _MeunState extends State<Meun> {
             contentPadding: EdgeInsets.only(left: 10),
             border: OutlineInputBorder(),
           ),
-          value: _selectedDrink, // ローカル変数を使用
+          value: _selectedDrink,
           items: [
             DropdownMenuItem(
               value: "コーヒー",
@@ -532,7 +457,7 @@ class _MeunState extends State<Meun> {
           ],
           onChanged: (String? newValue) {
             setState(() {
-              _selectedDrink = newValue!; // ローカル変数を更新
+              _selectedDrink = newValue!;
             });
             widget.onDrinkChanged(newValue!);
           },
@@ -542,7 +467,6 @@ class _MeunState extends State<Meun> {
   }
 }
 
-// DrinkButton、TimeButton、RecoedButtonクラスは既存のまま維持
 class DrinkButton extends StatefulWidget {
   final Function(int) onAmountChanged;
 
@@ -554,14 +478,7 @@ class DrinkButton extends StatefulWidget {
 }
 
 class _DrinkButtonState extends State<DrinkButton> {
-  int selectedIndex = -1; // 選択されたボタンのインデックス
-
-  @override
-  void initState() {
-    super.initState();
-    // 初期選択を200mlに設定
-    selectedIndex = 0;
-  }
+  int selectedIndex = 0;
 
   Widget drinkCupButton(
     int index,
@@ -625,7 +542,6 @@ class _DrinkButtonState extends State<DrinkButton> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 1杯 200ml
         drinkCupButton(
           0,
           "1杯",
@@ -633,9 +549,7 @@ class _DrinkButtonState extends State<DrinkButton> {
           "200ml",
           200,
         ),
-        // 1缶 350ml
         drinkCupButton(1, "1缶", "assets/can_coffee.png", "350ml", 350),
-        // ペットボトル1本 500ml
         Stack(
           alignment: Alignment.center,
           children: [
@@ -660,7 +574,7 @@ class _DrinkButtonState extends State<DrinkButton> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Image.asset(
-                        "assets/petbottle_water_full.png", // パスを修正
+                        "assets/petbottle_water_full.png",
                         width: 40,
                         height: 50,
                       ),
@@ -681,7 +595,7 @@ class _DrinkButtonState extends State<DrinkButton> {
                     setState(() {
                       selectedIndex = 2;
                     });
-                    widget.onAmountChanged(500); // 500mlに修正
+                    widget.onAmountChanged(500);
                   },
                   splashColor: Colors.blue.withOpacity(0.1),
                   highlightColor: Colors.transparent,
@@ -715,7 +629,6 @@ class TimeButton extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // 就寝時間ボタン
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
@@ -760,10 +673,7 @@ class TimeButton extends StatelessWidget {
                       color: Colors.orange,
                     ),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 2,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 2),
                       child: Text(
                         "就寝時間",
                         style: TextStyle(
@@ -790,8 +700,6 @@ class TimeButton extends StatelessWidget {
             ],
           ),
         ),
-
-        // 起床時間ボタン（修正版）
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 10),
           child: Column(
@@ -836,10 +744,7 @@ class TimeButton extends StatelessWidget {
                       color: Colors.orange,
                     ),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 2,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 2),
                       child: Text(
                         "起床時間",
                         style: TextStyle(
@@ -895,10 +800,7 @@ class TimeDialog extends StatelessWidget {
               Navigator.of(context).pop();
             },
             child: const Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 10,
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
               child: Text("キャンセル"),
             ),
           ),
@@ -911,7 +813,6 @@ class TimeDialog extends StatelessWidget {
           ),
           child: GestureDetector(
             onTap: () {
-              // 時間を保存する処理
               Navigator.of(context).pop();
             },
             child: const Padding(

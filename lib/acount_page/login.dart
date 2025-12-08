@@ -67,9 +67,12 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
         const Padding(
           padding: EdgeInsets.only(bottom: 30),
           child: Column(
@@ -116,7 +119,9 @@ class _LoginFormState extends State<LoginForm> {
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: Column(children: [PassButton(), RegisterButton()]),
         ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
