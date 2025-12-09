@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
@@ -19,8 +21,8 @@
             android:windowSoftInputMode="adjustResize">
 
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme" />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -48,18 +50,28 @@
             </intent-filter>
         </activity>
 
-        <!-- ここに移動 -->
+
+        <!-- WorkManager receiver（スケジュール実行に必要） -->
         <receiver
             android:name="be.tramckrijte.workmanager.WorkManagerBroadcastReceiver"
+            android:enabled="true"
             android:exported="true">
             <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.REBOOT"/>
                 <action android:name="com.google.android.gms.actions.SCHEDULE_EXACT_ALARM"/>
             </intent-filter>
         </receiver>
 
+        <!-- Local Notifications 用：チャンネル作成に必要 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="daily_channel" />
+
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
     </application>
 
     <queries>
@@ -68,4 +80,5 @@
             <data android:mimeType="text/plain"/>
         </intent>
     </queries>
+
 </manifest>
