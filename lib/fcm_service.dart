@@ -3,6 +3,7 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_core/firebase_core.dart';
 import '../firebase_options.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 /// FCM バックグラウンド
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -25,3 +26,20 @@ Future<void> initializeFCM() async {
     print("フォアグラウンド通知: ${message.notification?.title}");
   });
 }
+
+/// 🔔 FCM のデフォルト通知チャンネルを作成（Manifest と一致させる）
+Future<void> createDefaultNotificationChannel() async {
+  const AndroidNotificationChannel defaultChannel = AndroidNotificationChannel(
+    'default_channel',          // ← Manifest と合わせる
+    'Default Notifications',
+    importance: Importance.high,
+  );
+
+  final FlutterLocalNotificationsPlugin plugin = FlutterLocalNotificationsPlugin();
+
+  await plugin
+      .resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>()
+      ?.createNotificationChannel(defaultChannel);
+}
+
