@@ -27,6 +27,10 @@ Future<void> main() async {
   // FCM 初期化
   await initializeFCM();
 
+  //main.dart で createDefaultNotificationChannel() を呼ぶ
+  await createDefaultNotificationChannel();
+
+
   // .env 読み込み
   await dotenv.load(fileName: '.env');
 
