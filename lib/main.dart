@@ -4,144 +4,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:workmanager/workmanager.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'dart:math';
-
-// Firebase
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'daily_notification_service.dart';
+import 'fcm_service.dart';
 import 'firebase_options.dart';
 
 import 'provider.dart';
 
-/// ------------------------------
-/// 🔔 WorkManager で実行されるバックグラウンド処理
-/// ------------------------------
-void callbackDispatcher() {
-  Workmanager().executeTask((task, inputData) async {
-    final FlutterLocalNotificationsPlugin notifications =
-    FlutterLocalNotificationsPlugin();
 
-    // 通知の初期化（Android）
-    const AndroidInitializationSettings androidSettings =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings initSettings =
-    InitializationSettings(android: androidSettings);
-
-    await notifications.initialize(initSettings);
-
-    // ランダムメッセージ
-    List<String> messages = [
-      "今日もケセランパセランが応援してるよ！",
-      "無理しすぎないで、少し休もうね！",
-      "あなたの努力はちゃんと積み重なってるよ！",
-      "今日はどんな一日？ 無理せずいこう！",
-      "ケセランパセランがふわふわ見守ってるよ！"
-    ];
-
-    final randomMsg = messages[Random().nextInt(messages.length)];
-
-    // 通知内容
-    const AndroidNotificationDetails androidDetails =
-    AndroidNotificationDetails(
-      'daily_channel',
-      'Daily Notification',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-
-    const NotificationDetails notificationDetails =
-    NotificationDetails(android: androidDetails);
-
-    // 端末に通知を出す
-    await notifications.show(
-      0,
-      'ケセランパセラン',
-      randomMsg,
-      notificationDetails,
-    );
-
-    return Future.value(true);
-  });
-}
-
-/// ------------------------------
-/// 🔥 FCM バックグラウンド
-/// ------------------------------
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  print('バックグラウンド通知受信: ${message.messageId}');
-}
 
 /// ------------------------------
 /// 🔥 main()
 /// ------------------------------
 Future<void> main() async {
-  // Flutter Widgetバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 環境変数の読み込み
+  // Firebase 初期化
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // FCM 初期化
+  await initializeFCM();
+
+  // .env 読み込み
   await dotenv.load(fileName: '.env');
 
-  // Supabaseの初期化
+  // Supabase 初期化
   await _initializeSupabase();
 
   // アプリ起動時刻の記録
   await _recordAppOpen();
 
-  // -------------------------
-  // 🔥 Workmanager 初期化
-  // -------------------------
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: false,
-  );
-
-  // -------------------------
-  // 🔥 毎日 12 時に通知を実行
-  // -------------------------
-  await Workmanager().registerPeriodicTask(
-    "dailyNotification",
-    "dailyNotificationTask",
-    frequency: const Duration(days: 1),
-    initialDelay: _calcInitialDelayForNoon(),
-  );
+  // WorkManager（毎日通知）初期化
+  await setupDailyNotification();
 
   runApp(const ProviderScope(child: MainApp()));
 }
 
-/// 12:00 までの遅延時間を計算
-Duration _calcInitialDelayForNoon() {
-  final now = DateTime.now();
-  DateTime nextNoon = DateTime(now.year, now.month, now.day, 12, 0, 0);
-
-  if (now.isAfter(nextNoon)) {
-    nextNoon = nextNoon.add(const Duration(days: 1));
-  }
-
-  return nextNoon.difference(now);
-}
-
-/// ------------------------------
-/// FCM 初期化
-/// ------------------------------
-Future<void> _initializeFCM() async {
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-  await FirebaseMessaging.instance.requestPermission();
-  final token = await FirebaseMessaging.instance.getToken();
-  print("FCM Token: $token");
-
-  FirebaseMessaging.onMessage.listen((message) {
-    print("フォアグラウンド通知受信: ${message.notification?.title}");
-  });
-}
-
-
-/// Supabaseの初期化
+/// Supabase 初期化
 Future<void> _initializeSupabase() async {
   final url = dotenv.env['SUPABASE_URL'];
   final anonKey = dotenv.env['SUPABASE_ANON_KEY'];
