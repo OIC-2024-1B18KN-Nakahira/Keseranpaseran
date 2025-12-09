@@ -4,31 +4,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'daily_notification_service.dart';
+import 'fcm_service.dart';
+import 'firebase_options.dart';
+
 import 'provider.dart';
 
-/// アプリケーションのエントリーポイント
+
+
+/// ------------------------------
+/// 🔥 main()
+/// ------------------------------
 Future<void> main() async {
-  // Flutter Widgetバインディングの初期化
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 環境変数の読み込み
+  // Firebase 初期化
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // FCM 初期化
+  await initializeFCM();
+
+  //main.dart で createDefaultNotificationChannel() を呼ぶ
+  await createDefaultNotificationChannel();
+
+
+  // .env 読み込み
   await dotenv.load(fileName: '.env');
 
-  // Supabaseの初期化
+  // Supabase 初期化
   await _initializeSupabase();
 
   // アプリ起動時刻の記録
   await _recordAppOpen();
 
-  // アプリケーションの起動
-  runApp(
-    const ProviderScope(
-      child: MainApp(),
-    ),
-  );
+  // WorkManager（毎日通知）初期化
+  await setupDailyNotification();
+
+  runApp(const ProviderScope(child: MainApp()));
 }
 
-/// Supabaseの初期化
+/// Supabase 初期化
 Future<void> _initializeSupabase() async {
   final url = dotenv.env['SUPABASE_URL'];
   final anonKey = dotenv.env['SUPABASE_ANON_KEY'];

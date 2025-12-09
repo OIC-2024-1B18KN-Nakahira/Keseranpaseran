@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "794581533432",
+    "project_id": "keseranpaseran-notice",
+    "storage_bucket": "keseranpaseran-notice.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:794581533432:android:8010970c9ed600c773710d",
+        "android_client_info": {
+          "package_name": "com.example.keseranpaseran"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaP1LoYKdNXWHMRkGlo6fRVBIxJ0_5qB0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
