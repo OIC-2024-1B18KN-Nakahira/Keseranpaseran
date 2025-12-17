@@ -4,6 +4,9 @@ import 'package:keseranpaseran/realtime_service.dart' as realtime;
 import 'package:keseranpaseran/widget/appbar_widget.dart';
 import 'package:keseranpaseran/provider.dart' as provider;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'bgm_provider.dart';
+
 
 final supabase = Supabase.instance.client;
 
@@ -41,14 +44,16 @@ class _HomeState extends ConsumerState<Home>
     realtime.RealtimeService.setSleepCallback(_onSleepDataChanged);
 
     print('リアルタイムコールバック設定完了');
-    // ▼ 浮遊アニメーションの初期化
-    // 3秒かけてゆっくり上下に移動して、reverse:true で行ったり来たりを繰り返す
+
+    // BGM再生開始
+    _startBgm();
+
+    // 浮遊アニメーションの初期化
     _floatCtrl = AnimationController(
-      vsync: this, // Ticker をこの State から供給
+      vsync: this,
       duration: const Duration(seconds: 3),
     );
 
-    // -10px から +10px の範囲をイージング（ゆっくり）で往復
     _floatAnim = Tween<double>(begin: -10.0, end: 10.0).animate(
       CurvedAnimation(
         parent: _floatCtrl,
@@ -56,11 +61,25 @@ class _HomeState extends ConsumerState<Home>
       ),
     );
 
-    // アニメーション開始（往復）
     _floatCtrl.repeat(reverse: true);
-
-    // 実際のデータ取得処理をここに記述
     loadUserData();
+  }
+
+// BGM再生メソッドを追加
+  Future<void> _startBgm() async {
+    try {
+      final player = ref.read(bgmPlayerProvider);
+      final volume = ref.read(bgmVolumeProvider);
+
+      if (player.state != PlayerState.playing) {
+        await player.setReleaseMode(ReleaseMode.loop);
+        await player.setVolume(volume);
+        await player.play(AssetSource('bgm.mp3'));
+        print('BGM再生開始');
+      }
+    } catch (e) {
+      print('BGM再生エラー: $e');
+    }
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'bgm_provider.dart';
 import 'provider.dart';
 
 /// アプリケーションのエントリーポイント
@@ -36,7 +37,7 @@ Future<void> _initializeSupabase() async {
   if (url == null || anonKey == null) {
     throw Exception(
       'Supabase credentials not found. '
-      'Please check your .env file.',
+          'Please check your .env file.',
     );
   }
 
@@ -97,6 +98,12 @@ class _MainAppState extends ConsumerState<MainApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
+    final player = ref.watch(bgmPlayerProvider);
+
+    // 音量変更を監視して自動反映
+    ref.listen(bgmVolumeProvider, (previous, next) {
+      player.setVolume(next);
+    });
 
     return MaterialApp.router(
       title: 'ケセランパセラン',

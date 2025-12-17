@@ -18,6 +18,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   workmanager: ^0.6.0
   flutter_local_notifications: ^17.2.1
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -28,15 +29,7 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - assets/syokkan_fuwafuwa.png
-    - assets/coffee01_blend.png
-    - assets/drink_coffee_cup01_espresso.png
-    - assets/drink_coffee_cup07_american.png
-    - assets/badStatus.png
-    - assets/goodStatus.png
-    - assets/deadStatus.png
-    - assets/can_coffee.png
-    - assets/petbottle_water_full.png
+    - assets/
 
   #   - images/a_dot_ham.jpeg
 
