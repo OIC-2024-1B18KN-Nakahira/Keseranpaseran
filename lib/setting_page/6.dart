@@ -165,9 +165,25 @@ class LogoutButton extends ConsumerWidget {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
       onPressed: () async {
+        // フォーカス解除（TextFieldがあるため）
+        FocusScope.of(context).unfocus();
+        // BGM停止は先に実行
+        final player = ref.read(bgmPlayerProvider);
+
+        try {
+          // ログアウト実行前にBGM停止
+          await player.stop();
+        } catch (_) {
+          // 失敗してもログアウトは続行
+        }
+        // サインアウト
         try {
           await Supabase.instance.client.auth.signOut();
+          if (!context.mounted) return;
+          // サインアウト後に明示的に遷移（ルーター再評価待ちを避ける）
+          context.go('/login'); // ルートは実プロジェクトのログインパスに合わせて
         } catch (error) {
+          if (!context.mounted) return;
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(
