@@ -5,8 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final supabase = Supabase.instance.client;
 
-class Calendar extends StatelessWidget {
-  const Calendar({super.key});
+class CalendarIcon extends StatelessWidget {
+  const CalendarIcon({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -46,13 +46,17 @@ class _AppTitleState extends ConsumerState<AppTitle> {
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadTodayData();
     });
   }
 
-  // カフェイン計算関数を追加（home.dartと同じ）
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadTodayData();
+  }
+
   double calculateCaffeineFromRecord(String drinkType, int amountMl) {
     switch (drinkType) {
       case "コーラ":
@@ -78,10 +82,8 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   Future<void> _loadTodayData() async {
     try {
-      print('=== AppBar: データ取得開始 ===');
       final user = supabase.auth.currentUser;
       if (user == null) {
-        print('AppBar: ユーザー未ログイン');
         setState(() {
           isLoading = false;
         });
@@ -92,12 +94,9 @@ class _AppTitleState extends ConsumerState<AppTitle> {
       final todayString =
           '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
 
-      print('AppBar: 今日の日付 = $todayString');
-
-      // 今日のカフェイン摂取量を取得（修正版）
       final caffeineResponse = await supabase
           .from('caffeine_records')
-          .select('amount_ml, drink_type') // drink_typeも取得
+          .select('amount_ml, drink_type')
           .eq('user_id', user.id)
           .gte('recorded_at', '${todayString}T00:00:00.000Z')
           .lt(
@@ -109,21 +108,14 @@ class _AppTitleState extends ConsumerState<AppTitle> {
       for (final record in caffeineResponse) {
         final amountMl = record['amount_ml'] as int? ?? 0;
         final drinkType = record['drink_type'] as String? ?? 'コーヒー';
-
-        // 飲み物の種類に応じて正確なカフェイン量を計算
         totalCaffeine += calculateCaffeineFromRecord(drinkType, amountMl);
       }
 
-      print('AppBar: カフェイン合計 = ${totalCaffeine.round()}mg');
-
-      // 今日の睡眠時間を取得（すべての記録を合計）
       final sleepResponse = await supabase
           .from('sleep_records')
           .select('sleep_duration_minutes')
           .eq('user_id', user.id)
           .eq('record_date', todayString);
-
-      print('AppBar: 睡眠レスポンス = $sleepResponse');
 
       String sleepTime = "0時間";
       if (sleepResponse.isNotEmpty) {
@@ -132,8 +124,6 @@ class _AppTitleState extends ConsumerState<AppTitle> {
           final sleepMinutes = record['sleep_duration_minutes'] as int? ?? 0;
           totalSleepMinutes += sleepMinutes;
         }
-
-        print('AppBar: 睡眠合計 = ${totalSleepMinutes}分');
 
         final hours = totalSleepMinutes ~/ 60;
         final minutes = totalSleepMinutes % 60;
@@ -147,21 +137,14 @@ class _AppTitleState extends ConsumerState<AppTitle> {
         } else {
           sleepTime = "0時間";
         }
-      } else {
-        print('AppBar: 睡眠データなし');
       }
-
-      print('AppBar: 睡眠表示 = $sleepTime');
 
       setState(() {
         todayCaffeine = totalCaffeine.round();
         todaySleep = sleepTime;
         isLoading = false;
       });
-
-      print('=== AppBar: データ取得完了 ===');
     } catch (error) {
-      print('AppBar: データ取得エラー: $error');
       setState(() {
         isLoading = false;
       });
@@ -170,57 +153,56 @@ class _AppTitleState extends ConsumerState<AppTitle> {
 
   @override
   Widget build(BuildContext context) {
-    // データ更新通知を監視し、変更時にデータを再取得
+    ref.watch(dataUpdateNotifierProvider);
+
     ref.listen<int>(dataUpdateNotifierProvider, (previous, next) {
-      print('AppBar: データ更新通知を受信 (previous: $previous, next: $next)');
-      if (previous != next) {
+      if (previous != null && previous != next) {
         _loadTodayData();
       }
     });
 
     return Padding(
-      padding: const EdgeInsets.only(top: 5), // 上部パディングを削減
+      padding: const EdgeInsets.only(top: 5),
       child: Row(
         children: [
-          // カフェイン摂取量ウィジェット
           Padding(
-            padding: const EdgeInsets.only(right: 8), // 右マージンを削減
+            padding: const EdgeInsets.only(right: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8), // 角丸を小さく
+                    borderRadius: BorderRadius.circular(8),
                     color: Colors.grey[300],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 4, vertical: 1), // パディングを削減
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                     child: const Text(
                       "カフェイン",
                       style: TextStyle(
-                        fontSize: 10, // フォントサイズを小さく
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 2), // 間隔を追加
+                const SizedBox(height: 2),
                 Container(
                   decoration: BoxDecoration(
-                    border: const Border.fromBorderSide(BorderSide(
-                        color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
-                    borderRadius: BorderRadius.circular(15), // 角丸を小さく
+                    border: const Border.fromBorderSide(
+                        BorderSide(color: Color(0xFFFFA748), width: 3)),
+                    borderRadius: BorderRadius.circular(15),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12, // 水平パディングを削減
-                      vertical: 3, // 垂直パディングを削減
+                      horizontal: 12,
+                      vertical: 3,
                     ),
                     child: Text(
                       isLoading ? "読込中" : "${todayCaffeine}mg",
                       style: const TextStyle(
-                        fontSize: 12, // フォントサイズを小さく
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -229,43 +211,42 @@ class _AppTitleState extends ConsumerState<AppTitle> {
               ],
             ),
           ),
-          // 睡眠時間ウィジェット
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8), // 角丸を小さく
+                  borderRadius: BorderRadius.circular(8),
                   color: Colors.grey[300],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 4, vertical: 1), // パディングを削減
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   child: const Text(
                     "睡眠時間",
                     style: TextStyle(
-                      fontSize: 10, // フォントサイズを小さく
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 2), // 間隔を追加
+              const SizedBox(height: 2),
               Container(
                 decoration: BoxDecoration(
-                  border: const Border.fromBorderSide(BorderSide(
-                      color: Color(0xFFFFA748), width: 3)), // ボーダーを細く
-                  borderRadius: BorderRadius.circular(15), // 角丸を小さく
+                  border: const Border.fromBorderSide(
+                      BorderSide(color: Color(0xFFFFA748), width: 3)),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12, // 水平パディングを削減
-                    vertical: 3, // 垂直パディングを削減
+                    horizontal: 12,
+                    vertical: 3,
                   ),
                   child: Text(
                     isLoading ? "読込中" : todaySleep,
                     style: const TextStyle(
-                      fontSize: 12, // フォントサイズを小さく
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
