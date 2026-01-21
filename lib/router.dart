@@ -12,15 +12,16 @@ import 'acount_page/password_reset.dart';
 import 'acount_page/password_update.dart';
 import 'history.dart';
 import 'home.dart';
-import 'provider.dart';
 import 'record.dart';
 import 'setting_page/6.dart';
 import 'setting_page/6_change_email.dart';
 import 'setting_page/6_edit_profile.dart';
 import 'setting_page/6_email_sent.dart';
+import 'calendar.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _homeNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _calendarNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _recordNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _historyNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _accountNavigatorKey = GlobalKey<NavigatorState>();
@@ -29,15 +30,13 @@ class AppRouter {
   const AppRouter._();
 
   static GoRouter createRouter(Ref ref) {
-    return _createRouterCore(ref.read);
-  }
-
-  static GoRouter _createRouterCore(T Function<T>(ProviderBase<T> provider) read) {
     return GoRouter(
       initialLocation: '/login',
       navigatorKey: _rootNavigatorKey,
       redirect: (BuildContext context, GoRouterState state) {
-        final isAuthenticated = read(isAuthenticatedProvider);
+        // Supabaseから直接認証状態を取得（Riverpodの更新タイミングのズレを回避）
+        final session = Supabase.instance.client.auth.currentSession;
+        final isAuthenticated = session != null;
         final isLoggingIn = state.uri.toString() == '/login';
         final isCreatingAccount = state.uri.toString().startsWith(
           '/account_create',
@@ -73,6 +72,15 @@ class AppRouter {
                 GoRoute(
                   path: '/home',
                   builder: (context, state) => const Home(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              navigatorKey: _calendarNavigatorKey,
+              routes: [
+                GoRoute(
+                  path: '/calendar',
+                  builder: (context, state) => const Calendar(),
                 ),
               ],
             ),
@@ -191,6 +199,11 @@ class _AppNavigationBar extends StatelessWidget {
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home),
             label: 'ホーム',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'カレンダー',
           ),
           NavigationDestination(
             icon: Icon(Icons.edit_document),
