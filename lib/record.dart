@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -42,6 +43,72 @@ class _RecordState extends ConsumerState<Record> {
       default:
         return 0.0;
     }
+  }
+
+  // ドラムロール形式の時間選択ダイアログを表示
+  Future<TimeOfDay?> _showCupertinoTimePicker({
+    required BuildContext context,
+    TimeOfDay? initialTime,
+  }) async {
+    TimeOfDay? selectedTime;
+    final initial = initialTime ?? TimeOfDay.now();
+    DateTime tempDateTime = DateTime(
+      2000, 1, 1,
+      initial.hour,
+      initial.minute,
+    );
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        child: Column(
+          children: [
+            Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBackground.resolveFrom(context),
+                border: const Border(
+                  bottom: BorderSide(color: CupertinoColors.separator),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('キャンセル'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: const Text('完了'),
+                    onPressed: () {
+                      selectedTime = TimeOfDay(
+                        hour: tempDateTime.hour,
+                        minute: tempDateTime.minute,
+                      );
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: tempDateTime,
+                use24hFormat: true,
+                onDateTimeChanged: (DateTime newDateTime) {
+                  tempDateTime = newDateTime;
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return selectedTime;
   }
 
   void resetInputs() {
@@ -227,7 +294,7 @@ class _RecordState extends ConsumerState<Record> {
                             lastDate: DateTime.now(),
                           );
                           if (picked != null) {
-                            final TimeOfDay? time = await showTimePicker(
+                            final TimeOfDay? time = await _showCupertinoTimePicker(
                               context: context,
                               initialTime:
                                   TimeOfDay.fromDateTime(selectedDateTime),
@@ -650,7 +717,7 @@ class TimeButton extends StatelessWidget {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () async {
-                              final TimeOfDay? picked = await showTimePicker(
+                              final TimeOfDay? picked = await showCupertinoTimePickerDialog(
                                 context: context,
                                 initialTime:
                                     bedtime ?? TimeOfDay(hour: 22, minute: 0),
@@ -721,7 +788,7 @@ class TimeButton extends StatelessWidget {
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),
                             onTap: () async {
-                              final TimeOfDay? picked = await showTimePicker(
+                              final TimeOfDay? picked = await showCupertinoTimePickerDialog(
                                 context: context,
                                 initialTime:
                                     wakeTime ?? TimeOfDay(hour: 6, minute: 0),
@@ -845,4 +912,70 @@ class RecoedButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// トップレベルのドラムロール時間選択ダイアログ（StatelessWidgetから使用可能）
+Future<TimeOfDay?> showCupertinoTimePickerDialog({
+  required BuildContext context,
+  TimeOfDay? initialTime,
+}) async {
+  TimeOfDay? selectedTime;
+  final initial = initialTime ?? TimeOfDay.now();
+  DateTime tempDateTime = DateTime(
+    2000, 1, 1,
+    initial.hour,
+    initial.minute,
+  );
+
+  await showModalBottomSheet(
+    context: context,
+    builder: (context) => Container(
+      height: 300,
+      color: CupertinoColors.systemBackground.resolveFrom(context),
+      child: Column(
+        children: [
+          Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground.resolveFrom(context),
+              border: const Border(
+                bottom: BorderSide(color: CupertinoColors.separator),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('キャンセル'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('完了'),
+                  onPressed: () {
+                    selectedTime = TimeOfDay(
+                      hour: tempDateTime.hour,
+                      minute: tempDateTime.minute,
+                    );
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.time,
+              initialDateTime: tempDateTime,
+              use24hFormat: true,
+              onDateTimeChanged: (DateTime newDateTime) {
+                tempDateTime = newDateTime;
+              },
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  return selectedTime;
 }
