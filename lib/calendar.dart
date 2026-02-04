@@ -30,11 +30,23 @@ class _CalendarState extends ConsumerState<Calendar> {
   Map<String, double> _caffeinByDate = {};
   Map<String, double?> _sleepByDate = {};
 
+  // 日付ごとのスタンプデータ
+  Map<String, List<Map<String, dynamic>>> _stampsByDate = {};
+
+  // 利用可能なスタンプ（絵文字）リスト
+  static const List<String> _availableStamps = [
+    '😊', '😴', '☕', '🎉', '💪', '🏃', '📚', '💼',
+    '🎵', '🍽️', '🌟', '❤️', '🔥', '✨', '🎯', '✅',
+    '😢', '😤', '🤒', '💊', '🏥', '🍀', '🌈', '🌙',
+    '☀️', '🌧️', '❄️', '🌸', '🍎', '🥗', '🍰', '🍺',
+  ];
+
   @override
   void initState() {
     super.initState();
     controller = EventsController();
     _loadCalendarEvents();
+    _loadCalendarStamps();
   }
 
   @override
@@ -133,6 +145,45 @@ class _CalendarState extends ConsumerState<Calendar> {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  // スタンプデータを読み込む
+  Future<void> _loadCalendarStamps() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        return;
+      }
+
+      // 表示月の前後1ヶ月分のデータを取得
+      final startDate = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+      final endDate = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
+
+      final startDateString = _formatDate(startDate);
+      final endDateString = _formatDate(endDate);
+
+      final stamps = await supabase
+          .from('calendar_stamps')
+          .select()
+          .eq('user_id', currentUser.id)
+          .gte('stamp_date', startDateString)
+          .lte('stamp_date', endDateString)
+          .order('created_at');
+
+      // 日付ごとにグループ化
+      _stampsByDate = {};
+      for (final stamp in stamps) {
+        final dateKey = stamp['stamp_date'] as String;
+        _stampsByDate[dateKey] ??= [];
+        _stampsByDate[dateKey]!.add(stamp);
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (error) {
+      print('スタンプデータ取得エラー: $error');
+    }
   }
 
   Color _parseColor(String? colorString) {
@@ -369,6 +420,104 @@ class _CalendarState extends ConsumerState<Calendar> {
     }
   }
 
+  // スタンプ追加ダイアログ
+  Future<void> _showAddStampDialog(DateTime date) async {
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('スタンプを追加 (${_formatDate(date)})'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 8,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+            ),
+            itemCount: _availableStamps.length,
+            itemBuilder: (context, index) {
+              final emoji = _availableStamps[index];
+              return GestureDetector(
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _addStamp(date, emoji);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    emoji,
+                    style: const TextStyle(fontSize: 24),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // スタンプをデータベースに追加
+  Future<void> _addStamp(DateTime date, String emoji) async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) return;
+
+      await supabase.from('calendar_stamps').insert({
+        'user_id': currentUser.id,
+        'stamp_date': _formatDate(date),
+        'emoji': emoji,
+      });
+
+      await _loadCalendarStamps();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('スタンプ $emoji を追加しました')),
+        );
+      }
+    } catch (error) {
+      print('スタンプ追加エラー: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('スタンプの追加に失敗しました: $error')),
+        );
+      }
+    }
+  }
+
+  // スタンプを削除
+  Future<void> _deleteStamp(String id) async {
+    try {
+      await supabase.from('calendar_stamps').delete().eq('id', id);
+      await _loadCalendarStamps();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('スタンプを削除しました')),
+        );
+      }
+    } catch (error) {
+      print('スタンプ削除エラー: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('スタンプの削除に失敗しました: $error')),
+        );
+      }
+    }
+  }
+
   // 予定追加ダイアログ
   Future<void> _showAddEventDialog([DateTime? selectedDate]) async {
     final date = selectedDate ?? _selectedDay ?? DateTime.now();
@@ -575,162 +724,241 @@ class _CalendarState extends ConsumerState<Calendar> {
   void _showEventsForDay(DateTime day) {
     final dateKey = _formatDate(day);
     final events = _eventsByDate[dateKey] ?? [];
+    final stamps = _stampsByDate[dateKey] ?? [];
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${day.year}年${day.month}月${day.day}日の予定',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) => Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${day.year}年${day.month}月${day.day}日の予定',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        // カフェイン摂取量と睡眠時間の表示
-                        FutureBuilder<Map<String, dynamic>>(
-                          future: _loadDayHealthData(day),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Text(
-                                '読み込み中...',
-                                style: TextStyle(
+                          const SizedBox(height: 4),
+                          // カフェイン摂取量と睡眠時間の表示
+                          FutureBuilder<Map<String, dynamic>>(
+                            future: _loadDayHealthData(day),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return const Text(
+                                  '読み込み中...',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                );
+                              }
+
+                              final caffeine = snapshot.data?['caffeine'] as double? ?? 0.0;
+                              final sleep = snapshot.data?['sleep'] as double?;
+                              final sleepText = sleep != null
+                                  ? '${sleep.toStringAsFixed(1)}時間'
+                                  : '未記録';
+
+                              return Text(
+                                'カフェイン: ${caffeine.round()}mg / 睡眠時間: $sleepText',
+                                style: const TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey,
                                 ),
                               );
-                            }
-
-                            final caffeine = snapshot.data?['caffeine'] as double? ?? 0.0;
-                            final sleep = snapshot.data?['sleep'] as double?;
-                            final sleepText = sleep != null
-                                ? '${sleep.toStringAsFixed(1)}時間'
-                                : '未記録';
-
-                            return Text(
-                              'カフェイン: ${caffeine.round()}mg / 睡眠時間: $sleepText',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _showAddEventDialog(day);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: events.isEmpty
-                  ? const Center(
-                      child: Text(
-                        '予定はありません',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      itemCount: events.length,
-                      itemBuilder: (context, index) {
-                        final event = events[index];
-                        final color = _parseColor(event['color'] as String?);
-                        final startTime = event['start_time'] as String?;
-                        final endTime = event['end_time'] as String?;
-
-                        String timeText = '';
-                        if (startTime != null) {
-                          timeText = startTime.substring(0, 5);
-                          if (endTime != null) {
-                            timeText += ' - ${endTime.substring(0, 5)}';
-                          }
-                        }
-
-                        return ListTile(
-                          leading: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          title: Text(event['title'] ?? ''),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (timeText.isNotEmpty) Text(timeText),
-                              if (event['description'] != null &&
-                                  (event['description'] as String).isNotEmpty)
-                                Text(
-                                  event['description'],
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                            ],
-                          ),
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit),
-                                    SizedBox(width: 8),
-                                    Text('編集'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text('削除', style: TextStyle(color: Colors.red)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) async {
-                              if (value == 'edit') {
-                                Navigator.pop(context);
-                                await _showEditEventDialog(event);
-                              } else if (value == 'delete') {
-                                Navigator.pop(context);
-                                await _deleteEvent(event['id']);
-                              }
                             },
                           ),
-                        );
+                        ],
+                      ),
+                    ),
+                    // スタンプ追加ボタン
+                    IconButton(
+                      icon: const Icon(Icons.emoji_emotions_outlined),
+                      tooltip: 'スタンプを追加',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showAddStampDialog(day);
                       },
                     ),
-            ),
-          ],
+                    // 予定追加ボタン
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: '予定を追加',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showAddEventDialog(day);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // スタンプセクション
+              if (stamps.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'スタンプ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: stamps.map((stamp) {
+                          return GestureDetector(
+                            onLongPress: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('スタンプを削除'),
+                                  content: Text('スタンプ ${stamp['emoji']} を削除しますか？'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, false),
+                                      child: const Text('キャンセル'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      child: const Text('削除'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                Navigator.pop(context);
+                                await _deleteStamp(stamp['id']);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                stamp['emoji'] ?? '',
+                                style: const TextStyle(fontSize: 24),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                ),
+              const Divider(height: 1),
+              Expanded(
+                child: events.isEmpty
+                    ? const Center(
+                        child: Text(
+                          '予定はありません',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        itemCount: events.length,
+                        itemBuilder: (context, index) {
+                          final event = events[index];
+                          final color = _parseColor(event['color'] as String?);
+                          final startTime = event['start_time'] as String?;
+                          final endTime = event['end_time'] as String?;
+
+                          String timeText = '';
+                          if (startTime != null) {
+                            timeText = startTime.substring(0, 5);
+                            if (endTime != null) {
+                              timeText += ' - ${endTime.substring(0, 5)}';
+                            }
+                          }
+
+                          return ListTile(
+                            leading: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            title: Text(event['title'] ?? ''),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (timeText.isNotEmpty) Text(timeText),
+                                if (event['description'] != null &&
+                                    (event['description'] as String).isNotEmpty)
+                                  Text(
+                                    event['description'],
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                              ],
+                            ),
+                            trailing: PopupMenuButton(
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit),
+                                      SizedBox(width: 8),
+                                      Text('編集'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Text('削除', style: TextStyle(color: Colors.red)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              onSelected: (value) async {
+                                if (value == 'edit') {
+                                  Navigator.pop(context);
+                                  await _showEditEventDialog(event);
+                                } else if (value == 'delete') {
+                                  Navigator.pop(context);
+                                  await _deleteEvent(event['id']);
+                                }
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1159,6 +1387,7 @@ class _CalendarState extends ConsumerState<Calendar> {
           _focusedMonth = month;
         });
         _loadCalendarEvents();
+        _loadCalendarStamps();
       },
       weekParam: WeekParam(
         headerDayBuilder: (dayOfWeek) {
@@ -1185,6 +1414,83 @@ class _CalendarState extends ConsumerState<Calendar> {
             _selectedDay = day;
           });
           _showEventsForDay(day);
+        },
+        dayBuilder: (day, events, isToday, isInMonth) {
+          final dateKey = _formatDate(day);
+          final stamps = _stampsByDate[dateKey] ?? [];
+          final dayEvents = _eventsByDate[dateKey] ?? [];
+
+          final weekDayColor = day.weekday == DateTime.sunday
+              ? Colors.red
+              : day.weekday == DateTime.saturday
+                  ? Colors.blue
+                  : Colors.black87;
+
+          return Container(
+            margin: const EdgeInsets.all(1),
+            decoration: BoxDecoration(
+              color: isToday
+                  ? Colors.blue.withOpacity(0.1)
+                  : isInMonth
+                      ? Colors.white
+                      : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(4),
+              border: isToday
+                  ? Border.all(color: Colors.blue, width: 2)
+                  : null,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 日付番号
+                Padding(
+                  padding: const EdgeInsets.only(top: 2, left: 4),
+                  child: Text(
+                    '${day.day}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                      color: isInMonth ? weekDayColor : Colors.grey,
+                    ),
+                  ),
+                ),
+                // スタンプ表示
+                if (stamps.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Wrap(
+                      spacing: 1,
+                      runSpacing: 1,
+                      children: stamps.take(3).map((stamp) {
+                        return Text(
+                          stamp['emoji'] ?? '',
+                          style: const TextStyle(fontSize: 12),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                // イベントインジケーター
+                if (dayEvents.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2),
+                    child: Row(
+                      children: dayEvents.take(3).map((event) {
+                        final color = _parseColor(event['color'] as String?);
+                        return Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(right: 2),
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+          );
         },
       ),
     );
