@@ -35,10 +35,38 @@ class _CalendarState extends ConsumerState<Calendar> {
 
   // 利用可能なスタンプ（絵文字）リスト
   static const List<String> _availableStamps = [
-    '😊', '😴', '☕', '🎉', '💪', '🏃', '📚', '💼',
-    '🎵', '🍽️', '🌟', '❤️', '🔥', '✨', '🎯', '✅',
-    '😢', '😤', '🤒', '💊', '🏥', '🍀', '🌈', '🌙',
-    '☀️', '🌧️', '❄️', '🌸', '🍎', '🥗', '🍰', '🍺',
+    '😊',
+    '😴',
+    '☕',
+    '🎉',
+    '💪',
+    '🏃',
+    '📚',
+    '💼',
+    '🎵',
+    '🍽️',
+    '🌟',
+    '❤️',
+    '🔥',
+    '✨',
+    '🎯',
+    '✅',
+    '😢',
+    '😤',
+    '🤒',
+    '💊',
+    '🏥',
+    '🍀',
+    '🌈',
+    '🌙',
+    '☀️',
+    '🌧️',
+    '❄️',
+    '🌸',
+    '🍎',
+    '🥗',
+    '🍰',
+    '🍺',
   ];
 
   @override
@@ -68,7 +96,8 @@ class _CalendarState extends ConsumerState<Calendar> {
       }
 
       // 表示月の前後1ヶ月分のデータを取得
-      final startDate = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+      final startDate =
+          DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
       final endDate = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
 
       final startDateString = _formatDate(startDate);
@@ -156,7 +185,8 @@ class _CalendarState extends ConsumerState<Calendar> {
       }
 
       // 表示月の前後1ヶ月分のデータを取得
-      final startDate = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+      final startDate =
+          DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
       final endDate = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
 
       final startDateString = _formatDate(startDate);
@@ -289,7 +319,9 @@ class _CalendarState extends ConsumerState<Calendar> {
     final initial = initialTime ?? TimeOfDay.now();
     // TimeOfDayをDateTimeに変換（CupertinoDatePickerはDateTimeを使用）
     DateTime tempDateTime = DateTime(
-      2000, 1, 1,
+      2000,
+      1,
+      1,
       initial.hour,
       initial.minute,
     );
@@ -350,7 +382,8 @@ class _CalendarState extends ConsumerState<Calendar> {
   }
 
   // ドラッグ&ドロップでイベントを移動
-  Future<void> _moveEvent(Event oldEvent, DateTime newStart, DateTime newEnd) async {
+  Future<void> _moveEvent(
+      Event oldEvent, DateTime newStart, DateTime newEnd) async {
     // データベース内の対応するイベントを探す
     String? eventId;
     for (final entry in _eventIdMap.entries) {
@@ -758,7 +791,8 @@ class _CalendarState extends ConsumerState<Calendar> {
                           FutureBuilder<Map<String, dynamic>>(
                             future: _loadDayHealthData(day),
                             builder: (context, snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 return const Text(
                                   '読み込み中...',
                                   style: TextStyle(
@@ -768,7 +802,8 @@ class _CalendarState extends ConsumerState<Calendar> {
                                 );
                               }
 
-                              final caffeine = snapshot.data?['caffeine'] as double? ?? 0.0;
+                              final caffeine =
+                                  snapshot.data?['caffeine'] as double? ?? 0.0;
                               final sleep = snapshot.data?['sleep'] as double?;
                               final sleepText = sleep != null
                                   ? '${sleep.toStringAsFixed(1)}時間'
@@ -810,7 +845,8 @@ class _CalendarState extends ConsumerState<Calendar> {
               // スタンプセクション
               if (stamps.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -833,10 +869,12 @@ class _CalendarState extends ConsumerState<Calendar> {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('スタンプを削除'),
-                                  content: Text('スタンプ ${stamp['emoji']} を削除しますか？'),
+                                  content:
+                                      Text('スタンプ ${stamp['emoji']} を削除しますか？'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.pop(ctx, false),
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
                                       child: const Text('キャンセル'),
                                     ),
                                     ElevatedButton(
@@ -938,7 +976,8 @@ class _CalendarState extends ConsumerState<Calendar> {
                                     children: [
                                       Icon(Icons.delete, color: Colors.red),
                                       SizedBox(width: 8),
-                                      Text('削除', style: TextStyle(color: Colors.red)),
+                                      Text('削除',
+                                          style: TextStyle(color: Colors.red)),
                                     ],
                                   ),
                                 ),
@@ -967,18 +1006,21 @@ class _CalendarState extends ConsumerState<Calendar> {
   // 予定編集ダイアログ
   Future<void> _showEditEventDialog(Map<String, dynamic> event) async {
     final titleController = TextEditingController(text: event['title']);
-    final descriptionController = TextEditingController(text: event['description'] ?? '');
+    final descriptionController =
+        TextEditingController(text: event['description'] ?? '');
 
     TimeOfDay? startTime;
     TimeOfDay? endTime;
 
     if (event['start_time'] != null) {
       final parts = (event['start_time'] as String).split(':');
-      startTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      startTime =
+          TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
     }
     if (event['end_time'] != null) {
       final parts = (event['end_time'] as String).split(':');
-      endTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      endTime =
+          TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
     }
 
     Color selectedColor = _parseColor(event['color'] as String?);
@@ -1303,19 +1345,23 @@ class _CalendarState extends ConsumerState<Calendar> {
               Icon(
                 viewIcons[viewType],
                 size: 20,
-                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black54,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.black54,
               ),
               const SizedBox(width: 8),
               Text(
                 viewLabels[viewType]!,
                 style: TextStyle(
-                  color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  color:
+                      isSelected ? Theme.of(context).colorScheme.primary : null,
                   fontWeight: isSelected ? FontWeight.bold : null,
                 ),
               ),
               if (isSelected) ...[
                 const Spacer(),
-                Icon(Icons.check, size: 18, color: Theme.of(context).colorScheme.primary),
+                Icon(Icons.check,
+                    size: 18, color: Theme.of(context).colorScheme.primary),
               ],
             ],
           ),
@@ -1361,13 +1407,29 @@ class _CalendarState extends ConsumerState<Calendar> {
 
   // 日本語の月名リスト
   static const List<String> _japaneseMonthNames = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月',
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
   ];
 
   // 日本語の曜日名リスト（日曜日始まり）
   static const List<String> _japaneseWeekDays = [
-    '日', '月', '火', '水', '木', '金', '土',
+    '日',
+    '月',
+    '火',
+    '水',
+    '木',
+    '金',
+    '土',
   ];
 
   // 曜日番号から日本語曜日名を取得
@@ -1409,81 +1471,51 @@ class _CalendarState extends ConsumerState<Calendar> {
         },
       ),
       daysParam: DaysParam(
-        onDayTapUp: (day) {
-          setState(() {
-            _selectedDay = day;
-          });
-          _showEventsForDay(day);
-        },
-        dayBuilder: (day, events, isToday, isInMonth) {
+        headerHeight: 40,
+        dayHeaderBuilder: (day) {
           final dateKey = _formatDate(day);
           final stamps = _stampsByDate[dateKey] ?? [];
-          final dayEvents = _eventsByDate[dateKey] ?? [];
-
-          final weekDayColor = day.weekday == DateTime.sunday
+          final isToday = day.year == DateTime.now().year &&
+              day.month == DateTime.now().month &&
+              day.day == DateTime.now().day;
+          final dayColor = day.weekday == DateTime.sunday
               ? Colors.red
               : day.weekday == DateTime.saturday
                   ? Colors.blue
-                  : Colors.black87;
-
-          return Container(
-            margin: const EdgeInsets.all(1),
-            decoration: BoxDecoration(
-              color: isToday
-                  ? Colors.blue.withOpacity(0.1)
-                  : isInMonth
-                      ? Colors.white
-                      : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(4),
-              border: isToday
-                  ? Border.all(color: Colors.blue, width: 2)
-                  : null,
-            ),
+                  : Colors.black;
+          return SizedBox(
+            height: 40,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // 日付番号
-                Padding(
-                  padding: const EdgeInsets.only(top: 2, left: 4),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: isToday
+                      ? BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          shape: BoxShape.circle,
+                        )
+                      : null,
+                  alignment: Alignment.center,
                   child: Text(
                     '${day.day}',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                      color: isInMonth ? weekDayColor : Colors.grey,
+                      color: isToday ? Colors.white : dayColor,
                     ),
                   ),
                 ),
-                // スタンプ表示
                 if (stamps.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Wrap(
-                      spacing: 1,
-                      runSpacing: 1,
+                  SizedBox(
+                    height: 18,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: stamps.take(3).map((stamp) {
                         return Text(
                           stamp['emoji'] ?? '',
-                          style: const TextStyle(fontSize: 12),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                // イベントインジケーター
-                if (dayEvents.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Row(
-                      children: dayEvents.take(3).map((event) {
-                        final color = _parseColor(event['color'] as String?);
-                        return Container(
-                          width: 6,
-                          height: 6,
-                          margin: const EdgeInsets.only(right: 2),
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
+                          style: const TextStyle(fontSize: 14),
                         );
                       }).toList(),
                     ),
@@ -1491,6 +1523,12 @@ class _CalendarState extends ConsumerState<Calendar> {
               ],
             ),
           );
+        },
+        onDayTapUp: (day) {
+          setState(() {
+            _selectedDay = day;
+          });
+          _showEventsForDay(day);
         },
       ),
     );
@@ -1530,7 +1568,6 @@ class _CalendarState extends ConsumerState<Calendar> {
                       color: weekDayColor,
                     ),
                   ),
-                  
                 ],
               ),
             ),
@@ -1644,7 +1681,8 @@ class DraggableEventWidget extends StatefulWidget {
   final double height;
   final double width;
   final double heightPerMinute;
-  final Function(DateTime exactStart, DateTime exactEnd, DateTime roundStart, DateTime roundEnd) onDragEnd;
+  final Function(DateTime exactStart, DateTime exactEnd, DateTime roundStart,
+      DateTime roundEnd) onDragEnd;
   final Widget child;
 
   const DraggableEventWidget({
